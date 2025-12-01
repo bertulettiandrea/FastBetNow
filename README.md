@@ -1,8 +1,3 @@
-Ecco una versione **esteticamente migliorata**, più professionale e adatta come **README.md** per un repository GitHub del progetto *FastBetNow*.
-Ho mantenuto tutte le informazioni fornite, migliorandone forma, chiarezza e impatto.
-
----
-
 #  **FastBetNow**
 
 ### *Il centro scommesse online dove giochi, ti diverti e… non rischi un euro!*
@@ -47,3 +42,20 @@ Gli utenti giocano utilizzando **una valuta virtuale non convertibile**, perfett
 
 Offrire un ambiente sicuro, divertente e totalmente gratuito che simula in modo realistico un centro scommesse online.
 Perfetto per imparare, testare strategie o semplicemente sfidare i propri amici senza preoccuparsi del portafogli.
+
+---
+
+##  Casi d'uso 
+
+as utente non registrato i want to register/login (legge e scrive)
+
+as utente non ho registrato i want to visualizzare elenco di tutte le partite nei 3 giorni successivi con relative quote vittoria squadra 1 x o 2 (legge)
+
+as UR i want to caricare conto guardando una pubblicità (scrive)
+
+as UR i want to creare una schedina(selezionare le quote e impostare una puntata) (legge e scrive)
+
+as UR i want to vedere schedine in corso e passate in un archivio (legge e scrive)
+
+as UR i want to visualizzare il mio profilo con i miei dati personali, il mio saldo il mio profitti/perdita (leggere)
+
