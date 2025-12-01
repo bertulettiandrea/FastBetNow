@@ -3,7 +3,7 @@ Ho mantenuto tutte le informazioni fornite, migliorandone forma, chiarezza e imp
 
 ---
 
-# 🎯 **FastBetNow**
+#  **FastBetNow**
 
 ### *Il centro scommesse online dove giochi, ti diverti e… non rischi un euro!*
 
@@ -12,18 +12,18 @@ Gli utenti giocano utilizzando **una valuta virtuale non convertibile**, perfett
 
 ---
 
-## 🚀 **Caratteristiche principali**
+##  **Caratteristiche principali**
 
-* 🎲 **Scommesse sportive** con interfaccia intuitiva e moderna
-* 📊 **Quote competitive** ispirate ai maggiori siti del settore (Snai, Planetwin, Bet365…)
-* 🔴 **Eventi live** e aggiornamenti in tempo reale
-* 🧪 **Valuta virtuale** per giocare senza perdere soldi
-* 💬 **Supporto 24/7** (simulato)
-* 🌐 **Esperienza realistica** per chi cerca il brivido della scommessa senza rischi
+*  **Scommesse sportive** con interfaccia intuitiva e moderna
+*  **Quote competitive** ispirate ai maggiori siti del settore (Snai, Planetwin, Bet365…)
+*  **Eventi live** e aggiornamenti in tempo reale
+*  **Valuta virtuale** per giocare senza perdere soldi
+*  **Supporto 24/7** (simulato)
+*  **Esperienza realistica** per chi cerca il brivido della scommessa senza rischi
 
 ---
 
-## 🧩 **Tecnologie utilizzate**
+##  **Tecnologie utilizzate**
 
 * **HTML5**
 * **CSS3**
@@ -33,17 +33,17 @@ Gli utenti giocano utilizzando **una valuta virtuale non convertibile**, perfett
 
 ---
 
-## 🖥️ **Prototipi e Demo**
+##  **Prototipi e Demo**
 
-🔗 **Prototipo Lovable**
+ **Prototipo Lovable**
 *[https://match-money-master.lovable.app](https://match-money-master.lovable.app)*
 
-🔗 **Versione online (Altervista)**
+ **Versione online (Altervista)**
 *[http://bertulettiandrea5ie.altervista.org/](http://bertulettiandrea5ie.altervista.org/)*
 
 ---
 
-## 🎨 Obiettivo del progetto
+##  Obiettivo del progetto
 
 Offrire un ambiente sicuro, divertente e totalmente gratuito che simula in modo realistico un centro scommesse online.
 Perfetto per imparare, testare strategie o semplicemente sfidare i propri amici senza preoccuparsi del portafogli.
