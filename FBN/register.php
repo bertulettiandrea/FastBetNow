@@ -106,7 +106,9 @@ if (!$isJsonRequest) {
             <div class="mb-3"><label>Password</label><input type="password" name="password" class="form-control" required minlength="6"></div>
             <button type="submit" class="btn btn-primary w-100">Registrati</button>
         </form>
-        <div class="text-center mt-3"><a href="login.php">Torna al Login</a></div>
+        <div class="text-center mt-4">
+            <p class="text-muted">Hai già un account? <a href="login.php" class="text-decoration-none fw-bold">Accedi</a></p>
+        </div>
     </div>
 </body>
 </html>

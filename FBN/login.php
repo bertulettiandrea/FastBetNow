@@ -90,7 +90,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
             $_SESSION['user_email'] = $email;
             $_SESSION['user_nome'] = $row['nome'];
-            header('Location: dashboard.php', true, 303);
+            header('Location: sito/index.php', true, 303);
             exit();
         } else {
             $error = 'Email o password non validi';
@@ -133,6 +133,9 @@ if (!$isJsonRequest) {
             </div>
             <button type="submit" class="btn-login">Accedi</button>
         </form>
+        <div class="text-center mt-4">
+            <p class="text-muted">Non hai un account? <a href="register.php" class="text-decoration-none fw-bold">Registrati</a></p>
+        </div>
     </div>
 </body>
 </html>
