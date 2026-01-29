@@ -20,27 +20,56 @@ $password = $data->password;
 
 global $mysqli;
 
+// 1. Recupero utente
 $stmt = $mysqli->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
-$result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
 if ($user && password_verify($password, $user['password'])) {
     
+    // 2. Recupero Ruolo e Permessi per il Payload
+    $queryInfo = "
+        SELECT R.nome as ruolo, P.codice, P.descrizione 
+        FROM UTENTE_RUOLO UR
+        JOIN RUOLO R ON UR.id_ruolo = R.id
+        LEFT JOIN RUOLO_PERMESSO RP ON R.id = RP.id_ruolo
+        LEFT JOIN PERMESSO P ON RP.id_permesso = P.id
+        WHERE UR.email_utente = ?
+    ";
+    $stmtI = $mysqli->prepare($queryInfo);
+    $stmtI->bind_param("s", $email);
+    $stmtI->execute();
+    $resI = $stmtI->get_result();
+
+    $ruolo = "Ospite";
+    $permessi = [];
+    while ($row = $resI->fetch_assoc()) {
+        $ruolo = $row['ruolo'];
+        if ($row['codice']) {
+            $permessi[] = [
+                'cod' => $row['codice'],
+                'desc' => $row['descrizione']
+            ];
+        }
+    }
+
     $issuedAt = time();
     $expire = $issuedAt + ACCESS_TOKEN_EXPIRATION;
 
+    // Inseriamo tutto nel payload
     $payload = [
         'iat'  => $issuedAt,
         'exp'  => $expire,
-        'sub'  => $user['email']
+        'sub'  => $user['email'],
+        'role' => $ruolo,
+        'permissions' => $permessi,
+        'perm_count'  => count($permessi)
     ];
 
     $jwt = JWT::encode($payload, JWT_SECRET, 'HS256');
     $refreshToken = bin2hex(random_bytes(40));
 
-    // Salvataggio refresh token nel DB
     $updateStmt = $mysqli->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
     $updateStmt->bind_param("ss", $refreshToken, $email);
     $updateStmt->execute();
