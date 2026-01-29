@@ -8,7 +8,7 @@ use \Firebase\JWT\Key;
 
 header('Content-Type: application/json');
 
-// 1. VALIDAZIONE JWT (Chi sta facendo l'operazione?)
+// 1. VALIDAZIONE JWT
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 $jwt = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) { $jwt = $matches[1]; }
@@ -21,9 +21,8 @@ if (!$jwt) {
 
 try {
     $decoded = JWT::decode($jwt, new Key(JWT_SECRET, 'HS256'));
-    $adminEmail = $decoded->sub; // Email di chi esegue l'azione
-    
-    // OPZIONALE: Controlla se l'admin ha davvero il ruolo ADMIN nel payload
+    $adminEmail = $decoded->sub;
+
     if ($decoded->role !== 'ADMIN') {
         http_response_code(403);
         echo json_encode(["success" => false, "message" => "Azione permessa solo agli Admin"]);
@@ -33,16 +32,15 @@ try {
     global $mysqli;
     $data = json_decode(file_get_contents('php://input'), true);
     $action = $data['action'] ?? null;
-    $targetEmail = $data['email'] ?? ''; // L'utente da modificare
+    $targetEmail = $data['email'] ?? ''; 
 
-    // Impedisci di modificare se stessi per sicurezza
     if ($targetEmail === $adminEmail) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Non puoi modificare i tuoi permessi']);
         exit;
     }
 
-    // 2. RECUPERO ID_RUOLO DEL TARGET (L'utente che riceve/perde il permesso)
+    // 2. RECUPERO ID_RUOLO
     $queryRuolo = "SELECT id_ruolo FROM UTENTE_RUOLO WHERE email_utente = ?";
     $stmtRuolo = $mysqli->prepare($queryRuolo);
     $stmtRuolo->bind_param("s", $targetEmail);
@@ -55,7 +53,6 @@ try {
     }
     $idRuoloTarget = $resTarget->fetch_assoc()['id_ruolo'];
 
-    // 3. ESECUZIONE AZIONI
     if ($action == 'remove') {
         $permessoId = intval($data['permesso_id']);
         $queryDelete = "DELETE FROM RUOLO_PERMESSO WHERE id_ruolo = ? AND id_permesso = ?";
@@ -70,7 +67,6 @@ try {
         $codice = $data['codice'];
         $desc = $data['descrizione'] ?? '';
 
-        // Recupera o crea l'ID del permesso
         $stmtCheck = $mysqli->prepare("SELECT id FROM PERMESSO WHERE codice = ?");
         $stmtCheck->bind_param("s", $codice);
         $stmtCheck->execute();
@@ -84,8 +80,6 @@ try {
             $stmtIns->execute();
             $permessoId = $mysqli->insert_id;
         }
-
-        // Associa il permesso al ruolo del target
         $queryInsert = "INSERT IGNORE INTO RUOLO_PERMESSO (id_ruolo, id_permesso) VALUES (?, ?)";
         $stmtFinal = $mysqli->prepare($queryInsert);
         $stmtFinal->bind_param("ii", $idRuoloTarget, $permessoId);

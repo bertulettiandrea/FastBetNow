@@ -20,7 +20,7 @@ $password = $data->password;
 
 global $mysqli;
 
-// 1. Recupero utente
+// 1. Verifica di redenziali
 $stmt = $mysqli->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
