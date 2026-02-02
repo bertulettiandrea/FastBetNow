@@ -1,141 +1,378 @@
 <?php
 session_start();
-include_once '../database.php'; 
 
-if (!isset($_SESSION['user_email'])) {
-    header("Location: ../login.php");
-    exit();
-}
+// Visualizzazione errori per debug
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-global $mysqli;
-$email = $_SESSION['user_email'];
-$nome_utente = $_SESSION['user_nome'];
-$ruolo_nome = "Ospite"; 
+// Include l'helper per JWT
+include_once '../auth_helper.php';
 
-try {
-    // 1. RECUPERO DATI DAL DB (Solo per costruire il Token)
-    $query = "SELECT R.nome FROM UTENTE_RUOLO UR JOIN RUOLO R ON UR.id_ruolo = R.id WHERE UR.email_utente = ?";
-    $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($row = $res->fetch_assoc()) { $ruolo_nome = $row['nome']; }
+// Recupera i dati dal JWT invece che dal database
+$userData = getUserDataFromSession();
+$isLoggedIn = ($userData !== null);
+$userEmail = $userData['email'] ?? '';
+$userName = $userData['nome'] ?? '';
+$isAdmin = $userData && $userData['ruolo'] === 'ADMIN';
+$userPermissions = $userData['permessi'] ?? [];
 
-    $queryP = "SELECT P.codice, P.descrizione FROM UTENTE_RUOLO UR 
-               JOIN RUOLO_PERMESSO RP ON UR.id_ruolo = RP.id_ruolo
-               JOIN PERMESSO P ON RP.id_permesso = P.id
-               WHERE UR.email_utente = ?";
-    $stmtP = $mysqli->prepare($queryP);
-    $stmtP->bind_param("s", $email);
-    $stmtP->execute();
-    $resP = $stmtP->get_result();
-    
-    $lista_permessi_db = [];
-    while ($p = $resP->fetch_assoc()) {
-        $lista_permessi_db[] = [
-            'cod' => $p['codice'],
-            'desc' => $p['descrizione']
-        ];
-    }
-
-    // 2. GENERAZIONE JWT
-    function base64UrlEncode($data) {
-        return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
-    }
-
-    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-    $payload_data = [
-        'iss' => 'FastBetNow',
-        'email' => $email,
-        'role' => $ruolo_nome,
-        'permissions' => $lista_permessi_db,
-        'perm_count' => count($lista_permessi_db),
-        'iat' => time(),
-        'exp' => time() + 3600
-    ];
-    
-    $base64UrlHeader = base64UrlEncode($header);
-    $base64UrlPayload = base64UrlEncode(json_encode($payload_data));
-    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, 'secret_key_123', true);
-    $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . base64UrlEncode($signature);
-
-    // 3. ESTRAZIONE DATI DAL JWT (Fonte di verità per la stampa)
-    $tokenParts = explode('.', $jwt);
-    $payloadDecoded = json_decode(base64_decode($tokenParts[1]), true);
-    
-    $display_permissions = $payloadDecoded['permissions'];
-    $display_count = $payloadDecoded['perm_count'];
-
-} catch (Exception $e) {
-    die("Errore: " . $e->getMessage());
-}
+// Dati di esempio per le partite (sostituirai con API) - 1 per campionato
+$partite = [
+    [
+        'squadra_casa' => 'Inter',
+        'squadra_trasferta' => 'Milan',
+        'campionato' => 'Serie A',
+        'data' => '2026-02-05 20:45',
+        'quota_casa' => 2.10,
+        'quota_pareggio' => 3.40,
+        'quota_trasferta' => 3.50
+    ],
+    [
+        'squadra_casa' => 'Barcelona',
+        'squadra_trasferta' => 'Real Madrid',
+        'campionato' => 'La Liga',
+        'data' => '2026-02-08 21:00',
+        'quota_casa' => 2.65,
+        'quota_pareggio' => 3.30,
+        'quota_trasferta' => 2.70
+    ],
+    [
+        'squadra_casa' => 'Man City',
+        'squadra_trasferta' => 'Liverpool',
+        'campionato' => 'Premier League',
+        'data' => '2026-02-09 17:30',
+        'quota_casa' => 2.20,
+        'quota_pareggio' => 3.50,
+        'quota_trasferta' => 3.30
+    ],
+    [
+        'squadra_casa' => 'Bayern',
+        'squadra_trasferta' => 'Dortmund',
+        'campionato' => 'Bundesliga',
+        'data' => '2026-02-09 18:30',
+        'quota_casa' => 1.75,
+        'quota_pareggio' => 3.80,
+        'quota_trasferta' => 4.50
+    ]
+];
 ?>
 
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard - FastBetNow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastBetNow - Partite</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; }
-        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .jwt-code { background: #282c34; color: #61dafb; padding: 15px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 0.8rem; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            padding-top: 80px;
+        }
+        
+        .navbar-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+        
+        .navbar-brand {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .profile-btn, .dashboard-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        
+        .profile-btn:hover, .dashboard-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .profile-img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .btn-login-nav {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 50px;
+            padding: 8px 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-login-nav:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .logout-btn {
+            background: transparent;
+            color: #dc3545;
+            border: 2px solid #dc3545;
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        
+        .logout-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* Stili per le card delle partite */
+        .match-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .championship-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .match-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .teams-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .team {
+            text-align: center;
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .vs-divider {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+            padding: 0 20px;
+        }
+
+        .odds-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .odd-btn {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .odd-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .odd-btn:hover .odd-label,
+        .odd-btn:hover .odd-value {
+            color: white;
+        }
+
+        .odd-label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .odd-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .page-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .no-matches {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-
-<nav class="navbar navbar-dark mb-4">
-    <div class="container">
-        <span class="navbar-brand">FastBetNow</span>
-        <a href="../logout.php" class="btn btn-sm btn-outline-light">Logout</a>
-    </div>
-</nav>
-
-<div class="container">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card p-4 text-center">
-                <h4><?php echo htmlspecialchars($nome_utente); ?></h4>
-                <span class="badge <?php echo ($ruolo_nome == 'ADMIN') ? 'bg-danger' : 'bg-success'; ?> mb-3">
-                    <?php echo htmlspecialchars($ruolo_nome); ?>
-                </span>
-                <hr>
-                <p class="mb-0">Permessi totali nel JWT:</p>
-                <h2 class="display-6 fw-bold text-primary"><?php echo $display_count; ?></h2>
-            </div>
-        </div>
-
-        <div class="col-md-8">
-            <div class="card p-4 mb-4">
-                <h5 class="text-secondary">JWT Session Token</h5>
-                <div class="jwt-code"><?php echo $jwt; ?></div>
-            </div>
-
-            <div class="card p-4">
-                <h5 class="mb-3">Dettaglio Permessi (dal Payload)</h5>
-                <?php if ($display_count > 0): ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($display_permissions as $p): ?>
-                            <div class="list-group-item px-0">
-                                <h6 class="mb-1 text-primary"><?php echo htmlspecialchars($p['cod']); ?></h6>
-                                <p class="mb-0 small text-muted"><?php echo htmlspecialchars($p['desc']); ?></p>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.php">
+                <i class="bi bi-lightning-fill"></i> FastBetNow
+            </a>
+            
+            <div class="ms-auto d-flex align-items-center">
+                <?php if ($isLoggedIn): ?>
+                    <?php if ($isAdmin): ?>
+                        <!-- Bottone Dashboard per Admin -->
+                        <a href="dashboard.php" class="dashboard-btn">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    <?php else: ?>
+                        <!-- Bottone Profilo per Utenti -->
+                        <a href="profilo.php" class="profile-btn">
+                            <div class="profile-img">
+                                <i class="bi bi-person-fill"></i>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                            <span><?= htmlspecialchars($userName) ?></span>
+                        </a>
+                    <?php endif; ?>
+                    <!-- Bottone Logout -->
+                    <a href="../logout.php" class="logout-btn">
+                        <i class="bi bi-box-arrow-right"></i> Esci
+                    </a>
                 <?php else: ?>
-                    <div class="alert alert-info">Nessun permesso incluso nel token.</div>
+                    <!-- Bottone Login se non loggato -->
+                    <a href="../login.php" class="btn btn-login-nav">
+                        <i class="bi bi-box-arrow-in-right"></i> Accedi
+                    </a>
                 <?php endif; ?>
             </div>
         </div>
+    </nav>
+
+    <!-- Contenuto principale -->
+    <div class="container">
+        <div class="page-title">
+            <h1><i class="bi bi-trophy-fill"></i> Partite Disponibili</h1>
+            <p>Scegli la tua partita e piazza la tua scommessa</p>
+        </div>
+
+        <?php if (empty($partite)): ?>
+            <div class="no-matches">
+                <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
+                <h3 class="mt-3">Nessuna partita disponibile</h3>
+                <p>Torna più tardi per vedere le prossime partite!</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($partite as $partita): ?>
+                <div class="match-card">
+                    <!-- Header con campionato e data -->
+                    <div class="match-header">
+                        <span class="championship-badge">
+                            <i class="bi bi-trophy"></i> <?= htmlspecialchars($partita['campionato']) ?>
+                        </span>
+                        <span class="match-date">
+                            <i class="bi bi-calendar-event"></i> 
+                            <?= date('d/m/Y H:i', strtotime($partita['data'])) ?>
+                        </span>
+                    </div>
+
+                    <!-- Squadre -->
+                    <div class="teams-container">
+                        <div class="team">
+                            <div class="team-name"><?= htmlspecialchars($partita['squadra_casa']) ?></div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="team">
+                            <div class="team-name"><?= htmlspecialchars($partita['squadra_trasferta']) ?></div>
+                        </div>
+                    </div>
+
+                    <!-- Quote -->
+                    <div class="odds-container">
+                        <div class="odd-btn">
+                            <div class="odd-label">1 (Casa)</div>
+                            <div class="odd-value"><?= number_format($partita['quota_casa'], 2) ?></div>
+                        </div>
+                        <div class="odd-btn">
+                            <div class="odd-label">X (Pareggio)</div>
+                            <div class="odd-value"><?= number_format($partita['quota_pareggio'], 2) ?></div>
+                        </div>
+                        <div class="odd-btn">
+                            <div class="odd-label">2 (Trasferta)</div>
+                            <div class="odd-value"><?= number_format($partita['quota_trasferta'], 2) ?></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-</div>
 
-<script>
-    // Per debug: visualizza il payload decodificato in console
-    console.log("JWT Payload:", <?php echo json_encode($payloadDecoded); ?>);
-</script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
