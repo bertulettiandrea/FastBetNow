@@ -288,7 +288,7 @@ $partite = [
                 <?php if ($isLoggedIn): ?>
                     <?php if ($isAdmin): ?>
                         <!-- Bottone Dashboard per Admin -->
-                        <a href="dashboard.php" class="dashboard-btn">
+                        <a href="admin/dashboard.php" class="dashboard-btn">
                             <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </a>
