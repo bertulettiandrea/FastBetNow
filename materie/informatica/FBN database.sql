@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jan 29, 2026 at 02:21 PM
+-- Generation Time: Feb 06, 2026 at 10:22 AM
 -- Server version: 10.11.13-MariaDB-0ubuntu0.24.04.1
 -- PHP Version: 8.3.6
 
@@ -38,9 +38,12 @@ CREATE TABLE `CONTO` (
 --
 
 INSERT INTO `CONTO` (`email_intestatario`, `saldo`, `bonus`) VALUES
+('aa@gmail.com', 0, 0),
 ('aaaaaa@gmail.com', 0, 0),
 ('admin@gmail.com', 0, 0),
-('bertuletti.andrea.studente54@itispaleocapa.it', 0, 0);
+('bertuletti.andrea.studente54@itispaleocapa.it', 0, 0),
+('esca@gmail.com', 0, 0),
+('lza@gmail.com', 0, 0);
 
 -- --------------------------------------------------------
 
@@ -152,9 +155,12 @@ CREATE TABLE `UTENTE` (
 --
 
 INSERT INTO `UTENTE` (`email`, `nome`, `cognome`, `password`, `refresh_token`) VALUES
+('aa@gmail.com', 'aa', 'aa', '$2y$10$fjGSHipCTjv6kO6BY70G4e7MmRNn3/invfDwrBgdK/OTReenZy1i2', '5c7b04e385fb9b294c7ffa0e1558c2f4ca03490d7d7cd1640b56ee575b3966424f6b981b3a8d0965'),
 ('aaaaaa@gmail.com', 'a', 'a', '$2y$10$dIK.GHGW6Azy8O81PV7hLu3pzvs2F8K1NWthi1KOrBd7VYCHRyX9m', '3ebac36c24fc4bd3df7903c52e4c36794a0930206d13e6fe11465c1ca38ba3d61fe56717e95d4111'),
-('admin@gmail.com', 'admin@gmail.com', 'admin@gmail.com', '$2y$10$G/FL7voNhZxe2PMKGOTgGOZvqYv7iX114/n9R5XhNOCQDx9BCAq6C', 'd9ee0887ea0e89511532389aeb129839b994061bda7c2b97ef801bfa37bf6b6c5381a22c11d09744'),
-('bertuletti.andrea.studente54@itispaleocapa.it', 'ANDREA', 'BERTULETTI', '$2y$10$tKPie8GgJ1CANzwLmCQmUed62chPfj9eJWRsEYhr1s7/ezdug4sn2', NULL);
+('admin@gmail.com', 'admin@gmail.com', 'admin@gmail.com', '$2y$10$G/FL7voNhZxe2PMKGOTgGOZvqYv7iX114/n9R5XhNOCQDx9BCAq6C', '83e63bd459bc2d4d2aa45d4dcf96d18eface02696417e04dac2dd8f1c8a37c5e7bdf4f2db41451ef'),
+('bertuletti.andrea.studente54@itispaleocapa.it', 'ANDREA', 'BERTULETTI', '$2y$10$tKPie8GgJ1CANzwLmCQmUed62chPfj9eJWRsEYhr1s7/ezdug4sn2', NULL),
+('esca@gmail.com', 'esca', 'esca', '$2y$10$O5JvDwd/.RGeaKKGBXA1ouSKugBzV0pnRdbsuSKXndIdsF5m8PV9S', '4544369167c4c0c2ebfa731b5c9e4803302d56066eb679436510c0ba15bf1ef517ddc5e5d08ed1b5'),
+('lza@gmail.com', 'lza', 'lza', '$2y$10$xpJlgS2osFcgWkaoAXzmdOE1OiKhNUyrSUD6ifVOHj9AUCUeCWFh.', '58e26d9ac47599873258da9c58a46bf234b0e4600f604a9efb590203e0491f75ba5bea719aa66de0');
 
 -- --------------------------------------------------------
 
@@ -172,9 +178,12 @@ CREATE TABLE `UTENTE_RUOLO` (
 --
 
 INSERT INTO `UTENTE_RUOLO` (`email_utente`, `id_ruolo`) VALUES
+('aa@gmail.com', 2),
 ('aaaaaa@gmail.com', 2),
 ('admin@gmail.com', 1),
-('bertuletti.andrea.studente54@itispaleocapa.it', 2);
+('bertuletti.andrea.studente54@itispaleocapa.it', 2),
+('esca@gmail.com', 2),
+('lza@gmail.com', 2);
 
 --
 -- Indexes for dumped tables

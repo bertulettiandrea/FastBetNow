@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 include_once 'database.php';
 require_once 'vendor/autoload.php';
 require_once 'JWT/config.php';
-
+ 
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
