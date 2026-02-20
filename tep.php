@@ -17,7 +17,6 @@ if (!isset($_SESSION['username'])) {
     <h1>TEP - Attività</h1>
     <ul>
         <li><a href="consume.html">Esercizio 1 - consumo</a></li>
-        <!-- Aggiungerai qui altri link durante l’anno -->
     </ul>
     <a href="index.php" class="btn btn-secondary mt-4">Torna alla Home</a>
 </div>

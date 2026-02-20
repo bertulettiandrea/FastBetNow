@@ -1,5 +1,4 @@
 <?php
-// Parametri di configurazione
 $host = '127.0.0.1';
 $db = 'FBN';
 $user = 'bertu';

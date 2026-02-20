@@ -8,7 +8,6 @@ $error = '';
 $success = '';
 $isJsonRequest = false;
 
-// 1. GESTIONE REGISTRAZIONE API (JSON)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && 
     isset($_SERVER['HTTP_CONTENT_TYPE']) && 
     strpos($_SERVER['HTTP_CONTENT_TYPE'], 'application/json') !== false) {
@@ -19,8 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     if(isset($data->email, $data->password, $data->nome, $data->cognome)){
         try {
             $mysqli->begin_transaction();
-            
-            // Verifica duplicato
+
             $stmt = $mysqli->prepare("SELECT email FROM UTENTE WHERE email = ?");
             $stmt->bind_param("s", $data->email);
             $stmt->execute();
@@ -49,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     }
 }
 
-// 2. GESTIONE REGISTRAZIONE HTML
 elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';

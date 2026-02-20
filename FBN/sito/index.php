@@ -1,15 +1,12 @@
 <?php
 session_start();
 
-// Visualizzazione errori per debug
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Include l'helper per JWT
 include_once '../auth_helper.php';
 
-// Recupera i dati dal JWT invece che dal database
 $userData = getUserDataFromSession();
 $isLoggedIn = ($userData !== null);
 $userEmail = $userData['email'] ?? '';
@@ -17,7 +14,6 @@ $userName = $userData['nome'] ?? '';
 $isAdmin = $userData && $userData['ruolo'] === 'ADMIN';
 $userPermissions = $userData['permessi'] ?? [];
 
-// Dati di esempio per le partite (sostituirai con API) - 1 per campionato
 $partite = [
     [
         'squadra_casa' => 'Inter',
@@ -151,7 +147,6 @@ $partite = [
             color: white;
         }
 
-        /* Stili per le card delle partite */
         .match-card {
             background: white;
             border-radius: 15px;
@@ -277,7 +272,6 @@ $partite = [
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
         <div class="container">
             <a class="navbar-brand" href="index.php">
@@ -287,13 +281,11 @@ $partite = [
             <div class="ms-auto d-flex align-items-center">
                 <?php if ($isLoggedIn): ?>
                     <?php if ($isAdmin): ?>
-                        <!-- Bottone Dashboard per Admin -->
                         <a href="admin/dashboard.php" class="dashboard-btn">
                             <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </a>
                     <?php else: ?>
-                        <!-- Bottone Profilo per Utenti -->
                         <a href="profilo.php" class="profile-btn">
                             <div class="profile-img">
                                 <i class="bi bi-person-fill"></i>
@@ -301,12 +293,10 @@ $partite = [
                             <span><?= htmlspecialchars($userName) ?></span>
                         </a>
                     <?php endif; ?>
-                    <!-- Bottone Logout -->
                     <a href="../logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i> Esci
                     </a>
                 <?php else: ?>
-                    <!-- Bottone Login se non loggato -->
                     <a href="../login.php" class="btn btn-login-nav">
                         <i class="bi bi-box-arrow-in-right"></i> Accedi
                     </a>
@@ -315,7 +305,6 @@ $partite = [
         </div>
     </nav>
 
-    <!-- Contenuto principale -->
     <div class="container">
         <div class="page-title">
             <h1><i class="bi bi-trophy-fill"></i> Partite Disponibili</h1>
@@ -331,7 +320,6 @@ $partite = [
         <?php else: ?>
             <?php foreach ($partite as $partita): ?>
                 <div class="match-card">
-                    <!-- Header con campionato e data -->
                     <div class="match-header">
                         <span class="championship-badge">
                             <i class="bi bi-trophy"></i> <?= htmlspecialchars($partita['campionato']) ?>
@@ -342,7 +330,6 @@ $partite = [
                         </span>
                     </div>
 
-                    <!-- Squadre -->
                     <div class="teams-container">
                         <div class="team">
                             <div class="team-name"><?= htmlspecialchars($partita['squadra_casa']) ?></div>
@@ -353,7 +340,6 @@ $partite = [
                         </div>
                     </div>
 
-                    <!-- Quote -->
                     <div class="odds-container">
                         <div class="odd-btn">
                             <div class="odd-label">1 (Casa)</div>

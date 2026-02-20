@@ -1,7 +1,7 @@
 <?php
 if (isset($_POST['username'])) {
     $_SESSION['username'] = $_POST['username'];
-    header('Location: informatica.php'); // Reindirizza alla pagina Informatica dopo il login
+    header('Location: informatica.php');
     exit;
 }
 ?>
@@ -18,9 +18,8 @@ if (isset($_POST['username'])) {
     <ul>
         <li><a href="informatica/Esercizio1/index.php">Esercizio 1 - Articoli</a></li>
         <li><a href="informatica/Esercizio2/index.php">Esercizio 2 - Login</a></li>
-        <!-- Aggiungerai qui altri link durante l’anno -->
     </ul>
     <a href="index.php" class="btn btn-secondary mt-4">Torna alla Home</a>
 </div>
 </body>
-</html>
+</html>

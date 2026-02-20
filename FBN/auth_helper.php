@@ -5,7 +5,6 @@ require_once 'JWT/config.php';
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
-// Funzione per decodificare e validare il JWT
 function decodeJWT($token) {
     try {
         $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
@@ -15,7 +14,6 @@ function decodeJWT($token) {
     }
 }
 
-// Funzione per ottenere i dati utente dal JWT salvato in sessione
 function getUserDataFromSession() {
     if (!isset($_SESSION['access_token'])) {
         return null;
@@ -26,8 +24,7 @@ function getUserDataFromSession() {
     if (!$decoded) {
         return null;
     }
-    
-    // Verifica se il token è scaduto
+
     if (isset($decoded['exp']) && $decoded['exp'] < time()) {
         return null;
     }
@@ -40,19 +37,16 @@ function getUserDataFromSession() {
     ];
 }
 
-// Funzione per verificare se l'utente è admin
 function isAdmin() {
     $userData = getUserDataFromSession();
     return $userData && $userData['ruolo'] === 'ADMIN';
 }
 
-// Funzione per verificare se l'utente ha un permesso specifico
 function hasPermission($permissionCode) {
     $userData = getUserDataFromSession();
     return $userData && in_array($permissionCode, $userData['permessi']);
 }
 
-// Funzione per ottenere tutti i permessi dell'utente
 function getUserPermissions() {
     $userData = getUserDataFromSession();
     return $userData ? $userData['permessi'] : [];

@@ -20,15 +20,13 @@ $password = $data->password;
 
 global $mysqli;
 
-// 1. Verifica di redenziali
 $stmt = $mysqli->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $user = $result->fetch_assoc();
 
 if ($user && password_verify($password, $user['password'])) {
-    
-    // 2. Recupero Ruolo e Permessi per il Payload
+
     $queryInfo = "
         SELECT R.nome as ruolo, P.codice, P.descrizione 
         FROM UTENTE_RUOLO UR
@@ -57,7 +55,6 @@ if ($user && password_verify($password, $user['password'])) {
     $issuedAt = time();
     $expire = $issuedAt + ACCESS_TOKEN_EXPIRATION;
 
-    // Inseriamo tutto nel payload
     $payload = [
         'iat'  => $issuedAt,
         'exp'  => $expire,

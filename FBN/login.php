@@ -1,8 +1,6 @@
 <?php
 
 session_start();
-
-// Visualizzazione errori per debug
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -20,9 +18,7 @@ $error = '';
 $success = '';
 $isJsonRequest = false;
 
-// Funzione per recuperare il ruolo e i permessi dell'utente
 function getUserRoleAndPermissions($email, $mysqli) {
-    // Recupera il ruolo
     $stmt = $mysqli->prepare("
         SELECT r.id, r.nome as ruolo 
         FROM UTENTE u
@@ -37,8 +33,7 @@ function getUserRoleAndPermissions($email, $mysqli) {
     if (!$roleResult) {
         return ['ruolo' => 'UTENTE', 'permessi' => []];
     }
-    
-    // Recupera i permessi associati al ruolo
+
     $stmtPerm = $mysqli->prepare("
         SELECT p.codice, p.descrizione
         FROM RUOLO_PERMESSO rp
@@ -60,9 +55,7 @@ function getUserRoleAndPermissions($email, $mysqli) {
     ];
 }
 
-// Funzione helper per generare e salvare i token
 function generateUserTokens($email, $nome, $ruolo, $permessi, $mysqli) {
-    // 1. JWT (Access Token) - Include ruolo e permessi
     $issuedAt = time();
     $expire = $issuedAt + ACCESS_TOKEN_EXPIRATION;
     $payload = [
@@ -71,11 +64,10 @@ function generateUserTokens($email, $nome, $ruolo, $permessi, $mysqli) {
         'sub'  => $email,
         'nome' => $nome,
         'ruolo' => $ruolo,
-        'permessi' => $permessi  // Array di permessi
+        'permessi' => $permessi
     ];
     $jwt = JWT::encode($payload, JWT_SECRET, 'HS256');
 
-    // 2. Refresh Token
     $refreshToken = bin2hex(random_bytes(40));
     $upd = $mysqli->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
     $upd->bind_param("ss", $refreshToken, $email);
@@ -84,7 +76,6 @@ function generateUserTokens($email, $nome, $ruolo, $permessi, $mysqli) {
     return ['access' => $jwt, 'refresh' => $refreshToken];
 }
 
-// 1. GESTIONE RICHIESTA API (JSON)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     (isset($_SERVER['HTTP_CONTENT_TYPE']) && strpos($_SERVER['HTTP_CONTENT_TYPE'], 'application/json') !== false ||
      strpos(file_get_contents("php://input"), '{') === 0)) {
@@ -99,7 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
         $row = $stmt->get_result()->fetch_assoc();
        
         if ($row && password_verify($data->password, $row['password'])) {
-            // Recupera ruolo e permessi
             $roleData = getUserRoleAndPermissions($row['email'], $mysqli);
             $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $mysqli);
            
@@ -123,7 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     }
 }
 
-// 2. GESTIONE LOGIN HTML TRADIZIONALE (Browser)
 elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -135,13 +124,10 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         $row = $stmt->get_result()->fetch_assoc();
        
         if ($row && password_verify($password, $row['password'])) {
-            // Recupera ruolo e permessi
             $roleData = getUserRoleAndPermissions($row['email'], $mysqli);
-            
-            // Genera i token
+
             $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $mysqli);
 
-            // Salva in sessione
             $_SESSION['user_email'] = $email;
             $_SESSION['user_nome'] = $row['nome'];
             $_SESSION['access_token'] = $tokens['access'];

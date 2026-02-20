@@ -8,7 +8,6 @@ use \Firebase\JWT\Key;
 
 header('Content-Type: application/json');
 
-// 1. VALIDAZIONE JWT
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 $jwt = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) { $jwt = $matches[1]; }
@@ -40,7 +39,6 @@ try {
         exit;
     }
 
-    // 2. RECUPERO ID_RUOLO
     $queryRuolo = "SELECT id_ruolo FROM UTENTE_RUOLO WHERE email_utente = ?";
     $stmtRuolo = $mysqli->prepare($queryRuolo);
     $stmtRuolo->bind_param("s", $targetEmail);

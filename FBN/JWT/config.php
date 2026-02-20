@@ -1,4 +1,3 @@
 <?php
-// Usa una stringa casuale 
 define('JWT_SECRET', '4f9e8d7c6b5a43210fedcba9876543210123456789abcdef0123456789abcdef'); 
 define('ACCESS_TOKEN_EXPIRATION', 300); 

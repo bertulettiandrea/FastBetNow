@@ -1,19 +1,15 @@
 <?php
 session_start();
 
-// Visualizzazione errori per debug
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Include l'helper per JWT - ora è 2 livelli sopra
 include_once '../../auth_helper.php';
 
-// Verifica che l'utente sia loggato e sia admin
 $userData = getUserDataFromSession();
 
 if (!$userData || $userData['ruolo'] !== 'ADMIN') {
-    // Se non è admin, redirect all'index
     header('Location: ../index.php');
     exit();
 }
@@ -157,7 +153,6 @@ $userPermissions = $userData['permessi'];
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
         <div class="container">
             <a class="navbar-brand" href="../index.php">
@@ -176,16 +171,13 @@ $userPermissions = $userData['permessi'];
         </div>
     </nav>
 
-    <!-- Dashboard Content -->
     <div class="container dashboard-container">
-        <!-- Welcome Card -->
         <div class="welcome-card">
             <h2><i class="bi bi-person-badge"></i> Dashboard Amministratore</h2>
             <p class="mb-0">Benvenuto, <strong><?= htmlspecialchars($userName) ?></strong></p>
             <p class="text-muted mb-0"><?= htmlspecialchars($userEmail) ?></p>
         </div>
 
-        <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon">
@@ -220,7 +212,6 @@ $userPermissions = $userData['permessi'];
             </div>
         </div>
 
-        <!-- Permissions Section -->
         <div class="permissions-section">
             <h4><i class="bi bi-shield-check"></i> I Tuoi Permessi</h4>
             <p class="text-muted mb-3">Ruolo: <strong>ADMIN</strong></p>
