@@ -1,0 +1,35 @@
+rotte esistenti
+
+- GET /FBN/login.php -> form login HTML
+- POST /FBN/login.php -> login form classico (sessione + redirect)
+- POST /FBN/login.php con JSON -> login API inline
+- GET /FBN/register.php -> form registrazione HTML
+- POST /FBN/register.php -> registrazione form classica
+- POST /FBN/register.php con JSON -> registrazione API inline
+- GET /FBN/logout.php -> distrugge sessione e redirect login
+- GET /FBN/sito/index.php -> home interna con elenco partite mock
+- GET /FBN/sito/admin/dashboard.php -> dashboard admin protetta
+- GET /FBN/sito/logout.php -> logout secondario (presente ma con redirect discutibile)
+
+FastBetNow JWT/API
+- POST /FBN/JWT/login_api.php -> login API con access token + refresh token
+- /FBN/JWT/manage_permissions.php -> endpoint gestione permessi (usa token Bearer, non forza un metodo HTTP preciso)
+- /FBN/JWT/refresh.php -> file incompleto, non e una rotta realmente funzionante nello stato attuale
+
+
+
+rotte da creare 
+rotte per visualizzare pofilo utente:
+- GET /FBN/sito/profilo.php (pagina)
+
+rotte per wallet e ricarica con pubblicita:
+- POST /FBN/api/wallet/topup-ad
+- GET /FBN/api/wallet/balance
+- GET /FBN/api/wallet/transactions
+
+Rotte per schedine:
+- POST /FBN/api/betslips (creazione schedina)
+- GET /FBN/api/betslips/{id}
+
+rotte per eventi/quote:
+- GET /FBN/api/matches/{id}/odds

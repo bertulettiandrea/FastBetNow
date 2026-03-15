@@ -6,11 +6,9 @@ function documentazione(){
     <!doctype html>
 <html lang="en">
   <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
 
     <title>Api games service</title>
@@ -73,17 +71,7 @@ function documentazione(){
         
 
     </div>
-
-    <!-- Optional JavaScript; choose one of the two! -->
-
-    <!-- Option 1: Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
-
-    <!-- Option 2: Separate Popper and Bootstrap JS -->
-    <!--
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js" integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js" integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc" crossorigin="anonymous"></script>
-    -->
   </body>
 </html>
 	
@@ -117,8 +105,7 @@ function insert_mossa($db,$partita,$player,$mossa){
   return -2;
   if ( $player==null)
   return -2;
-  
-  /*if ($row["PLAYER1"]!=$player && $row["PLAYER2"]!=$player)*/
+
   if ($row["PLAYER1"]!=$player && $row["PLAYER2"]!=$player && $row["PLAYER3"]!=$player && $row["PLAYER3"]!=$player &&
   $row["PLAYER4"]!=$player && $row["PLAYER5"]!=$player && $row["PLAYER6"]!=$player && $row["PLAYER7"]!=$player)
   return -3;
@@ -193,18 +180,17 @@ if (strpos(strtoupper($player), "GRANA")!==false)
     if ($p["ID"]==$partita){ 
     $find=true;
     $n=-1;
-    for ($i=1;$i<=7;$i++){//
+    for ($i=1;$i<=7;$i++){
     	$giocatore="PLAYER".$i;
     	if ($p[$giocatore]==$player)
       		return -1;
     	
-        if ($p[$giocatore]==null && $n==-1)//
-        	$n=$i;//
+        if ($p[$giocatore]==null && $n==-1)
+        	$n=$i;
         }
     }
   if (!$find) return 0;
-  //echo $n;
-  $stmt = $db->prepare("UPDATE games_partite SET PLAYER$n=? WHERE ID=?");//PLAYER2
+  $stmt = $db->prepare("UPDATE games_partite SET PLAYER$n=? WHERE ID=?");
   $stmt->bind_param("si", $player,$partita); 
   if ($stmt->execute()) return 1;
   else return -2;
@@ -221,7 +207,6 @@ function gestisci_URI(){
 
 function errore($tipo,$error){
 	http_response_code($tipo);
-	//header("Content-Type: application/json; charset= utf-8");
     $ris='{"error":'.$tipo.';"description":"'.$error.'"}';
     die( $ris);
 }

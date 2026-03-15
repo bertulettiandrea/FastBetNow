@@ -9,6 +9,10 @@ include_once '../../auth_helper.php';
 
 $userData = getUserDataFromSession();
 
+if (!$userData) {
+    $userData = getUserDataFromRequestJWT();
+}
+
 if (!$userData || $userData['ruolo'] !== 'ADMIN') {
     header('Location: ../index.php');
     exit();

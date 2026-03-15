@@ -8,9 +8,36 @@ use \Firebase\JWT\Key;
 
 header('Content-Type: application/json');
 
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$rawInput = file_get_contents('php://input');
+$data = json_decode($rawInput, true);
+if (!is_array($data)) {
+    $data = [];
+}
+
+$authHeader = $_SERVER['HTTP_AUTHORIZATION']
+    ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+    ?? '';
+
+if (!$authHeader && function_exists('getallheaders')) {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+}
+
+if (!$authHeader && function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+}
+
+if (!$authHeader && !empty($_SERVER['HTTP_X_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_X_AUTHORIZATION'];
+}
+
 $jwt = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) { $jwt = $matches[1]; }
+
+if (!$jwt) {
+    $jwt = $data['access_token'] ?? $data['token'] ?? ($_GET['access_token'] ?? $_GET['token'] ?? null);
+}
 
 if (!$jwt) {
     http_response_code(401);
@@ -29,13 +56,12 @@ try {
     }
 
     global $mysqli;
-    $data = json_decode(file_get_contents('php://input'), true);
     $action = $data['action'] ?? null;
     $targetEmail = $data['email'] ?? ''; 
 
     if ($targetEmail === $adminEmail) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Non puoi modificare i tuoi permessi']);
+        echo json_encode(['success' => false, 'message' => 'Non puoi modificare i tuoi permessi', 'azione' => $action, 'email_target' => $targetEmail]);
         exit;
     }
 
@@ -46,7 +72,7 @@ try {
     $resTarget = $stmtRuolo->get_result();
     
     if ($resTarget->num_rows == 0) {
-        echo json_encode(['success' => false, 'message' => 'Utente target non trovato']);
+        echo json_encode(['success' => false, 'message' => 'Utente target non trovato','azione' => $action, 'email_target' => $targetEmail]);
         exit;
     }
     $idRuoloTarget = $resTarget->fetch_assoc()['id_ruolo'];
