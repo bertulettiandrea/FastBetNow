@@ -18,13 +18,11 @@ if (!isset($data->email) || !isset($data->password)) {
 $email = $data->email;
 $password = $data->password;
 
-global $mysqli;
+global $pdo;
 
-$stmt = $mysqli->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
+$stmt = $pdo->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
+$stmt->execute([$email]);
+$user = $stmt->fetch();
 
 if ($user && password_verify($password, $user['password'])) {
 
@@ -36,14 +34,12 @@ if ($user && password_verify($password, $user['password'])) {
         LEFT JOIN PERMESSO P ON RP.id_permesso = P.id
         WHERE UR.email_utente = ?
     ";
-    $stmtI = $mysqli->prepare($queryInfo);
-    $stmtI->bind_param("s", $email);
-    $stmtI->execute();
-    $resI = $stmtI->get_result();
+    $stmtI = $pdo->prepare($queryInfo);
+    $stmtI->execute([$email]);
 
     $ruolo = "Ospite";
     $permessi = [];
-    while ($row = $resI->fetch_assoc()) {
+    while ($row = $stmtI->fetch()) {
         $ruolo = $row['ruolo'];
         if ($row['codice']) {
             $permessi[] = [
@@ -68,9 +64,8 @@ if ($user && password_verify($password, $user['password'])) {
     $jwt = JWT::encode($payload, JWT_SECRET, 'HS256');
     $refreshToken = bin2hex(random_bytes(40));
 
-    $updateStmt = $mysqli->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
-    $updateStmt->bind_param("ss", $refreshToken, $email);
-    $updateStmt->execute();
+    $updateStmt = $pdo->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
+    $updateStmt->execute([$refreshToken, $email]);
 
     echo json_encode([
         "status" => "success",

@@ -79,7 +79,12 @@ function documentazione(){
 }
 
 function db_connect(){
-	$db = new mysqli("localhost", "classe5id", "password", "my_classe5id");
+	$dsn = "mysql:host=localhost;dbname=my_classe5id;charset=utf8mb4";
+	$db = new PDO($dsn, "classe5id", "password", [
+		PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+		PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+		PDO::ATTR_EMULATE_PREPARES => false,
+	]);
     return $db;
 }
 
@@ -87,19 +92,16 @@ function insert_partita($db,$player){
 if (strpos(strtoupper($player), "GRANA")!==false)
     return -1;
   $stmt = $db->prepare("INSERT INTO games_partite(PLAYER1) VALUES (?)");
-  $stmt->bind_param("s", $player); 
-  $stmt->execute();
-  return $db->insert_id;
+  $stmt->execute([$player]);
+  return (int) $db->lastInsertId();
 }
 
 function insert_mossa($db,$partita,$player,$mossa){
 	
   $stmt = $db->prepare("SELECT * from games_partite WHERE ID=?");
-  $stmt->bind_param("i", $partita); 
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $row = $result->fetch_assoc();
-  if ($row==null)
+  $stmt->execute([$partita]);
+  $row = $stmt->fetch();
+  if ($row===false)
   return -1;
   if ( $row["PLAYER2"]==null)
   return -2;
@@ -111,60 +113,56 @@ function insert_mossa($db,$partita,$player,$mossa){
   return -3;
   
   $stmt = $db->prepare("INSERT INTO games_mosse(MOSSA,PLAYER,GAME) VALUES (?,?,?)");
-  $stmt->bind_param("ssi", $mossa,$player,$partita); 
-  $stmt->execute();
-  return $db->insert_id;
+  $stmt->execute([$mossa,$player,$partita]);
+  return (int) $db->lastInsertId();
 }
 
 function mosse($db,$partita){
   $stmt = $db->prepare("SELECT * FROM games_partite WHERE ID=?");
-  $stmt->bind_param("i", $partita); 
-  $stmt->execute();
-  $result = $stmt->get_result();
-  if ($result->num_rows==0)
+	$stmt->execute([$partita]);
+  if (!$stmt->fetch())
   	return -1;
     
   $stmt = $db->prepare("SELECT * from games_mosse WHERE GAME=? ORDER BY ID DESC");
-  $stmt->bind_param("i", $partita); 
-  $stmt->execute();
-  $result = $stmt->get_result();
+	$stmt->execute([$partita]);
   $ris=array();
-  while($row = $result->fetch_assoc()) $ris[]=$row;
+  while($row = $stmt->fetch()) $ris[]=$row;
   return $ris;
 }
 
 
 function last_mossa($db,$partita){
   $stmt = $db->prepare("SELECT * FROM games_partite WHERE ID=?");
-  $stmt->bind_param("i", $partita); 
-  $stmt->execute();
-  $result = $stmt->get_result();
-  if ($result->num_rows==0)
+	$stmt->execute([$partita]);
+  if (!$stmt->fetch())
   	return -1;
     
   $stmt = $db->prepare("SELECT * from games_mosse WHERE GAME=? ORDER BY ID DESC LIMIT 1");
-  $stmt->bind_param("i", $partita); 
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $row = $result->fetch_assoc();
+  $stmt->execute([$partita]);
+  $row = $stmt->fetch();
   return $row;
 }
 
 function avaiable_partite($db){
-  $cancella=$db->query("delete from games_partite WHERE PLAYER2 IS NULL AND CREATED_AT < NOW() - INTERVAL 1 DAY	");
+  $db->exec("delete from games_partite WHERE PLAYER2 IS NULL AND CREATED_AT < NOW() - INTERVAL 1 DAY	");
   
   $result = $db->query("SELECT * from games_partite WHERE PLAYER2 IS NULL AND CREATED_AT >= NOW() - INTERVAL 1 DAY ORDER BY ID DESC");
   $risp=array();
-  while($row = $result->fetch_assoc())
+  while($row = $result->fetch())
     $risp[]=$row;
   return $risp;
 }
 function avaiable_partiteN($db,$n){
-  $cancella=$db->query("delete from games_partite WHERE PLAYER2 IS NULL AND CREATED_AT < NOW() - INTERVAL 1 DAY	");
+	$n = (int) $n;
+	if ($n < 2 || $n > 7) {
+		return [];
+	}
+
+  $db->exec("delete from games_partite WHERE PLAYER2 IS NULL AND CREATED_AT < NOW() - INTERVAL 1 DAY	");
   
   $result = $db->query("SELECT * from games_partite WHERE PLAYER$n IS NULL AND CREATED_AT >= NOW() - INTERVAL 1 DAY ORDER BY ID DESC");
   $risp=array();
-  while($row = $result->fetch_assoc())
+  while($row = $result->fetch())
     $risp[]=$row;
   return $risp;
 }
@@ -191,8 +189,7 @@ if (strpos(strtoupper($player), "GRANA")!==false)
     }
   if (!$find) return 0;
   $stmt = $db->prepare("UPDATE games_partite SET PLAYER$n=? WHERE ID=?");
-  $stmt->bind_param("si", $player,$partita); 
-  if ($stmt->execute()) return 1;
+  if ($stmt->execute([$player,$partita])) return 1;
   else return -2;
 }
 

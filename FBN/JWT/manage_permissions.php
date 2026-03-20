@@ -55,7 +55,7 @@ try {
         exit;
     }
 
-    global $mysqli;
+    global $pdo;
     $action = $data['action'] ?? null;
     $targetEmail = $data['email'] ?? ''; 
 
@@ -66,24 +66,22 @@ try {
     }
 
     $queryRuolo = "SELECT id_ruolo FROM UTENTE_RUOLO WHERE email_utente = ?";
-    $stmtRuolo = $mysqli->prepare($queryRuolo);
-    $stmtRuolo->bind_param("s", $targetEmail);
-    $stmtRuolo->execute();
-    $resTarget = $stmtRuolo->get_result();
-    
-    if ($resTarget->num_rows == 0) {
+    $stmtRuolo = $pdo->prepare($queryRuolo);
+    $stmtRuolo->execute([$targetEmail]);
+    $targetRole = $stmtRuolo->fetch();
+
+    if (!$targetRole) {
         echo json_encode(['success' => false, 'message' => 'Utente target non trovato','azione' => $action, 'email_target' => $targetEmail]);
         exit;
     }
-    $idRuoloTarget = $resTarget->fetch_assoc()['id_ruolo'];
+    $idRuoloTarget = $targetRole['id_ruolo'];
 
     if ($action == 'remove') {
         $permessoId = intval($data['permesso_id']);
         $queryDelete = "DELETE FROM RUOLO_PERMESSO WHERE id_ruolo = ? AND id_permesso = ?";
-        $stmt = $mysqli->prepare($queryDelete);
-        $stmt->bind_param("ii", $idRuoloTarget, $permessoId);
+        $stmt = $pdo->prepare($queryDelete);
         
-        if ($stmt->execute()) {
+        if ($stmt->execute([$idRuoloTarget, $permessoId])) {
             echo json_encode(['success' => true, 'message' => 'Permesso rimosso con successo']);
         }
 
@@ -91,24 +89,21 @@ try {
         $codice = $data['codice'];
         $desc = $data['descrizione'] ?? '';
 
-        $stmtCheck = $mysqli->prepare("SELECT id FROM PERMESSO WHERE codice = ?");
-        $stmtCheck->bind_param("s", $codice);
-        $stmtCheck->execute();
-        $resCheck = $stmtCheck->get_result();
+        $stmtCheck = $pdo->prepare("SELECT id FROM PERMESSO WHERE codice = ?");
+        $stmtCheck->execute([$codice]);
+        $existingPerm = $stmtCheck->fetch();
 
-        if ($resCheck->num_rows > 0) {
-            $permessoId = $resCheck->fetch_assoc()['id'];
+        if ($existingPerm) {
+            $permessoId = $existingPerm['id'];
         } else {
-            $stmtIns = $mysqli->prepare("INSERT INTO PERMESSO (codice, descrizione) VALUES (?, ?)");
-            $stmtIns->bind_param("ss", $codice, $desc);
-            $stmtIns->execute();
-            $permessoId = $mysqli->insert_id;
+            $stmtIns = $pdo->prepare("INSERT INTO PERMESSO (codice, descrizione) VALUES (?, ?)");
+            $stmtIns->execute([$codice, $desc]);
+            $permessoId = $pdo->lastInsertId();
         }
         $queryInsert = "INSERT IGNORE INTO RUOLO_PERMESSO (id_ruolo, id_permesso) VALUES (?, ?)";
-        $stmtFinal = $mysqli->prepare($queryInsert);
-        $stmtFinal->bind_param("ii", $idRuoloTarget, $permessoId);
+        $stmtFinal = $pdo->prepare($queryInsert);
         
-        if ($stmtFinal->execute()) {
+        if ($stmtFinal->execute([$idRuoloTarget, $permessoId])) {
             echo json_encode(['success' => true, 'message' => 'Permesso aggiunto con successo']);
         }
     }

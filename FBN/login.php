@@ -12,40 +12,37 @@ require_once 'JWT/config.php';
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
-global $mysqli;
+global $pdo;
 
 $error = '';
 $success = '';
 $isJsonRequest = false;
 
-function getUserRoleAndPermissions($email, $mysqli) {
-    $stmt = $mysqli->prepare("
+function getUserRoleAndPermissions($email, $pdo) {
+    $stmt = $pdo->prepare("
         SELECT r.id, r.nome as ruolo 
         FROM UTENTE u
         JOIN UTENTE_RUOLO ur ON u.email = ur.email_utente
         JOIN RUOLO r ON ur.id_ruolo = r.id
         WHERE u.email = ?
     ");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $roleResult = $stmt->get_result()->fetch_assoc();
+    $stmt->execute([$email]);
+    $roleResult = $stmt->fetch();
     
     if (!$roleResult) {
         return ['ruolo' => 'UTENTE', 'permessi' => []];
     }
 
-    $stmtPerm = $mysqli->prepare("
+    $stmtPerm = $pdo->prepare("
         SELECT p.codice, p.descrizione
         FROM RUOLO_PERMESSO rp
         JOIN PERMESSO p ON rp.id_permesso = p.id
         WHERE rp.id_ruolo = ?
     ");
-    $stmtPerm->bind_param("i", $roleResult['id']);
-    $stmtPerm->execute();
-    $permResult = $stmtPerm->get_result();
+    $stmtPerm->execute([$roleResult['id']]);
     
     $permessi = [];
-    while ($perm = $permResult->fetch_assoc()) {
+    while ($perm = $stmtPerm->fetch()) {
         $permessi[] = $perm['codice'];
     }
     
@@ -55,7 +52,7 @@ function getUserRoleAndPermissions($email, $mysqli) {
     ];
 }
 
-function generateUserTokens($email, $nome, $ruolo, $permessi, $mysqli) {
+function generateUserTokens($email, $nome, $ruolo, $permessi, $pdo) {
     $issuedAt = time();
     $expire = $issuedAt + ACCESS_TOKEN_EXPIRATION;
     $payload = [
@@ -69,9 +66,8 @@ function generateUserTokens($email, $nome, $ruolo, $permessi, $mysqli) {
     $jwt = JWT::encode($payload, JWT_SECRET, 'HS256');
 
     $refreshToken = bin2hex(random_bytes(40));
-    $upd = $mysqli->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
-    $upd->bind_param("ss", $refreshToken, $email);
-    $upd->execute();
+    $upd = $pdo->prepare("UPDATE UTENTE SET refresh_token = ? WHERE email = ?");
+    $upd->execute([$refreshToken, $email]);
 
     return ['access' => $jwt, 'refresh' => $refreshToken];
 }
@@ -84,14 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     $data = json_decode(file_get_contents("php://input"));
    
     if(isset($data->email) && isset($data->password)){
-        $stmt = $mysqli->prepare("SELECT email, password, nome FROM UTENTE WHERE email = ?");
-        $stmt->bind_param("s", $data->email);
-        $stmt->execute();
-        $row = $stmt->get_result()->fetch_assoc();
+        $stmt = $pdo->prepare("SELECT email, password, nome FROM UTENTE WHERE email = ?");
+        $stmt->execute([$data->email]);
+        $row = $stmt->fetch();
        
         if ($row && password_verify($data->password, $row['password'])) {
-            $roleData = getUserRoleAndPermissions($row['email'], $mysqli);
-            $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $mysqli);
+            $roleData = getUserRoleAndPermissions($row['email'], $pdo);
+            $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $pdo);
            
             header('Content-Type: application/json');
             echo json_encode([
@@ -118,15 +113,14 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $password = $_POST['password'] ?? '';
    
     if (!empty($email) && !empty($password)) {
-        $stmt = $mysqli->prepare("SELECT email, password, nome FROM UTENTE WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $row = $stmt->get_result()->fetch_assoc();
+        $stmt = $pdo->prepare("SELECT email, password, nome FROM UTENTE WHERE email = ?");
+        $stmt->execute([$email]);
+        $row = $stmt->fetch();
        
         if ($row && password_verify($password, $row['password'])) {
-            $roleData = getUserRoleAndPermissions($row['email'], $mysqli);
+            $roleData = getUserRoleAndPermissions($row['email'], $pdo);
 
-            $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $mysqli);
+            $tokens = generateUserTokens($row['email'], $row['nome'], $roleData['ruolo'], $roleData['permessi'], $pdo);
 
             $_SESSION['user_email'] = $email;
             $_SESSION['user_nome'] = $row['nome'];

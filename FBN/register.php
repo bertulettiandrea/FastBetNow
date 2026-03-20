@@ -2,7 +2,7 @@
 session_start();
 include_once 'database.php';
 
-global $mysqli;
+global $pdo;
 
 $error = '';
 $success = '';
@@ -17,29 +17,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     
     if(isset($data->email, $data->password, $data->nome, $data->cognome)){
         try {
-            $mysqli->begin_transaction();
+            $pdo->beginTransaction();
 
-            $stmt = $mysqli->prepare("SELECT email FROM UTENTE WHERE email = ?");
-            $stmt->bind_param("s", $data->email);
-            $stmt->execute();
-            if ($stmt->get_result()->fetch_assoc()) {
+            $stmt = $pdo->prepare("SELECT email FROM UTENTE WHERE email = ?");
+            $stmt->execute([$data->email]);
+            if ($stmt->fetch()) {
                 throw new Exception("Email già occupata");
             }
 
             $hashed = password_hash($data->password, PASSWORD_BCRYPT);
-            $stmt = $mysqli->prepare("INSERT INTO UTENTE (email, password, nome, cognome, refresh_token) VALUES (?, ?, ?, ?, NULL)");
-            $stmt->bind_param("ssss", $data->email, $hashed, $data->nome, $data->cognome);
-            $stmt->execute();
+            $stmt = $pdo->prepare("INSERT INTO UTENTE (email, password, nome, cognome, refresh_token) VALUES (?, ?, ?, ?, NULL)");
+            $stmt->execute([$data->email, $hashed, $data->nome, $data->cognome]);
 
-            $mysqli->query("INSERT INTO UTENTE_RUOLO (email_utente, id_ruolo) VALUES ('$data->email', 2)");
-            $mysqli->query("INSERT INTO CONTO (email_intestatario, saldo, bonus) VALUES ('$data->email', 0, 0)");
+            $stmtRole = $pdo->prepare("INSERT INTO UTENTE_RUOLO (email_utente, id_ruolo) VALUES (?, 2)");
+            $stmtRole->execute([$data->email]);
 
-            $mysqli->commit();
+            $stmtConto = $pdo->prepare("INSERT INTO CONTO (email_intestatario, saldo, bonus) VALUES (?, 0, 0)");
+            $stmtConto->execute([$data->email]);
+
+            $pdo->commit();
             header('Content-Type: application/json');
             echo json_encode(["status" => "success", "message" => "Utente creato"]);
             exit;
         } catch (Exception $e) {
-            $mysqli->rollback();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => $e->getMessage()]);
             exit;
@@ -55,20 +58,25 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
 
     if ($email && $password && $nome && $cognome) {
         try {
-            $mysqli->begin_transaction();
+            $pdo->beginTransaction();
             $hashed = password_hash($password, PASSWORD_BCRYPT);
             
-            $stmt = $mysqli->prepare("INSERT INTO UTENTE (email, password, nome, cognome, refresh_token) VALUES (?, ?, ?, ?, NULL)");
-            $stmt->bind_param("ssss", $email, $hashed, $nome, $cognome);
+            $stmt = $pdo->prepare("INSERT INTO UTENTE (email, password, nome, cognome, refresh_token) VALUES (?, ?, ?, ?, NULL)");
             
-            if ($stmt->execute()) {
-                $mysqli->query("INSERT INTO UTENTE_RUOLO (email_utente, id_ruolo) VALUES ('$email', 2)");
-                $mysqli->query("INSERT INTO CONTO (email_intestatario, saldo, bonus) VALUES ('$email', 0, 0)");
-                $mysqli->commit();
+            if ($stmt->execute([$email, $hashed, $nome, $cognome])) {
+                $stmtRole = $pdo->prepare("INSERT INTO UTENTE_RUOLO (email_utente, id_ruolo) VALUES (?, 2)");
+                $stmtRole->execute([$email]);
+
+                $stmtConto = $pdo->prepare("INSERT INTO CONTO (email_intestatario, saldo, bonus) VALUES (?, 0, 0)");
+                $stmtConto->execute([$email]);
+
+                $pdo->commit();
                 $success = 'Registrazione ok! Ora puoi accedere.';
             }
         } catch (Exception $e) {
-            $mysqli->rollback();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $error = "Errore: " . $e->getMessage();
         }
     }
