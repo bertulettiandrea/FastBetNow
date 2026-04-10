@@ -6,6 +6,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 include_once '../auth_helper.php';
+include_once '../database.php';
+require_once 'matches.php';
 
 $userData = getUserDataFromSession();
 $isLoggedIn = ($userData !== null);
@@ -13,45 +15,21 @@ $userEmail = $userData['email'] ?? '';
 $userName = $userData['nome'] ?? '';
 $isAdmin = $userData && $userData['ruolo'] === 'ADMIN';
 $userPermissions = $userData['permessi'] ?? [];
+$canPuntaSchedina = $isLoggedIn && in_array('PUNTA_SCHEDINA', $userPermissions, true);
 
-$partite = [
-    [
-        'squadra_casa' => 'Inter',
-        'squadra_trasferta' => 'Milan',
-        'campionato' => 'Serie A',
-        'data' => '2026-02-05 20:45',
-        'quota_casa' => 2.10,
-        'quota_pareggio' => 3.40,
-        'quota_trasferta' => 3.50
-    ],
-    [
-        'squadra_casa' => 'Barcelona',
-        'squadra_trasferta' => 'Real Madrid',
-        'campionato' => 'La Liga',
-        'data' => '2026-02-08 21:00',
-        'quota_casa' => 2.65,
-        'quota_pareggio' => 3.30,
-        'quota_trasferta' => 2.70
-    ],
-    [
-        'squadra_casa' => 'Man City',
-        'squadra_trasferta' => 'Liverpool',
-        'campionato' => 'Premier League',
-        'data' => '2026-02-09 17:30',
-        'quota_casa' => 2.20,
-        'quota_pareggio' => 3.50,
-        'quota_trasferta' => 3.30
-    ],
-    [
-        'squadra_casa' => 'Bayern',
-        'squadra_trasferta' => 'Dortmund',
-        'campionato' => 'Bundesliga',
-        'data' => '2026-02-09 18:30',
-        'quota_casa' => 1.75,
-        'quota_pareggio' => 3.80,
-        'quota_trasferta' => 4.50
-    ]
-];
+$userSaldo = null;
+if ($isLoggedIn) {
+    global $pdo;
+    $stmtSaldo = $pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ?');
+    $stmtSaldo->execute([$userEmail]);
+    $saldoFromDb = $stmtSaldo->fetchColumn();
+    $userSaldo = $saldoFromDb !== false ? (float) $saldoFromDb : 0.0;
+}
+
+$betStatus = $_GET['bet_status'] ?? '';
+$betMessage = trim($_GET['bet_message'] ?? '');
+
+$partite = getPartiteCatalog();
 ?>
 
 <!DOCTYPE html>
@@ -269,6 +247,118 @@ $partite = [
             text-align: center;
             color: #666;
         }
+
+        .bet-panel {
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .bet-panel h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .saldo-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #e8f3ff;
+            color: #1453a6;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .bet-actions {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto 1fr;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .add-selection {
+            background: linear-gradient(135deg, #1453a6 0%, #2a76d2 100%);
+            border: none;
+            color: white;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 10px 14px;
+            white-space: nowrap;
+        }
+
+        .bet-submit {
+            background: linear-gradient(135deg, #1f8f4d 0%, #34b56a 100%);
+            border: none;
+            color: white;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 10px 18px;
+            white-space: nowrap;
+        }
+
+        .bet-preview {
+            margin-top: 10px;
+            color: #444;
+            font-weight: 600;
+        }
+
+        .selection-list {
+            margin-top: 12px;
+            background: #f8fafc;
+            border: 1px solid #e4e9f1;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .selection-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border: 1px solid #e8edf6;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2b3a4d;
+        }
+
+        .selection-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .selection-remove {
+            border: none;
+            background: #ffe1e1;
+            color: #9f1d1d;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .selection-empty {
+            margin: 0;
+            color: #68778a;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .bet-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .add-selection {
+                width: 100%;
+            }
+
+            .bet-submit {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -310,6 +400,92 @@ $partite = [
             <h1><i class="bi bi-trophy-fill"></i> Partite Disponibili</h1>
             <p>Scegli la tua partita e piazza la tua scommessa</p>
         </div>
+
+        <?php if ($betMessage !== ''): ?>
+            <div class="alert <?= $betStatus === 'success' ? 'alert-success' : 'alert-danger' ?>">
+                <?= htmlspecialchars($betMessage) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($isLoggedIn && $canPuntaSchedina): ?>
+            <div class="bet-panel">
+                <h4><i class="bi bi-cash-coin"></i> Crea la tua schedina multipla</h4>
+                <div class="saldo-badge">
+                    Saldo disponibile: <?= number_format((float) $userSaldo, 2) ?> EUR
+                </div>
+
+                <form method="POST" action="punta_schedina.php">
+                    <div class="bet-actions">
+                        <div>
+                            <label for="matchSelect" class="form-label">Partita</label>
+                            <select class="form-select" name="match_index" id="matchSelect" required>
+                                <?php foreach ($partite as $index => $partita): ?>
+                                    <option
+                                        value="<?= $index ?>"
+                                        data-q1="<?= number_format((float) $partita['quota_casa'], 2, '.', '') ?>"
+                                        data-qx="<?= number_format((float) $partita['quota_pareggio'], 2, '.', '') ?>"
+                                        data-q2="<?= number_format((float) $partita['quota_trasferta'], 2, '.', '') ?>"
+                                    >
+                                        <?= htmlspecialchars($partita['squadra_casa'] . ' - ' . $partita['squadra_trasferta']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="segnoSelect" class="form-label">Segno</label>
+                            <select class="form-select" name="segno" id="segnoSelect" required>
+                                <option value="1">1</option>
+                                <option value="X">X</option>
+                                <option value="2">2</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="add-selection" id="addSelectionBtn">
+                            <i class="bi bi-plus-circle"></i> Aggiungi evento
+                        </button>
+
+                        <div>
+                            <label for="importoInput" class="form-label">Importo</label>
+                            <input
+                                id="importoInput"
+                                type="number"
+                                min="1"
+                                step="0.01"
+                                class="form-control"
+                                name="importo"
+                                value="5.00"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="selection-list" id="selectionList">
+                        <p class="selection-empty">Nessun evento aggiunto. Seleziona partita + segno e premi "Aggiungi evento".</p>
+                    </div>
+
+                    <input type="hidden" name="selezioni_json" id="selezioniJsonInput" value="[]">
+
+                    <div class="mt-3">
+                        <button type="submit" class="bet-submit" id="submitSchedinaBtn">
+                            <i class="bi bi-lightning-charge-fill"></i> Punta schedina
+                        </button>
+                    </div>
+                </form>
+
+                <div class="bet-preview">
+                    Eventi: <span id="selectedEvents">0</span> | Quota totale: <span id="selectedQuota">-</span> | Vincita potenziale: <span id="potentialWin">-</span>
+                </div>
+            </div>
+        <?php elseif ($isLoggedIn): ?>
+            <div class="alert alert-warning">
+                Non hai il permesso PUNTA_SCHEDINA per piazzare nuove schedine.
+            </div>
+        <?php else: ?>
+            <div class="alert alert-info">
+                Accedi per puntare una schedina e salvare le transazioni sul tuo conto.
+            </div>
+        <?php endif; ?>
 
         <?php if (empty($partite)): ?>
             <div class="no-matches">
@@ -359,6 +535,164 @@ $partite = [
         <?php endif; ?>
     </div>
 
+    <script>
+        (function () {
+            const matchSelect = document.getElementById('matchSelect');
+            const segnoSelect = document.getElementById('segnoSelect');
+            const addSelectionBtn = document.getElementById('addSelectionBtn');
+            const importoInput = document.getElementById('importoInput');
+            const selectionList = document.getElementById('selectionList');
+            const selezioniJsonInput = document.getElementById('selezioniJsonInput');
+            const submitSchedinaBtn = document.getElementById('submitSchedinaBtn');
+            const selectedEvents = document.getElementById('selectedEvents');
+            const selectedQuota = document.getElementById('selectedQuota');
+            const potentialWin = document.getElementById('potentialWin');
+            const form = document.querySelector('form[action="punta_schedina.php"]');
+
+            const selezioni = [];
+
+            if (!matchSelect || !segnoSelect || !addSelectionBtn || !importoInput || !selectionList || !selezioniJsonInput || !submitSchedinaBtn || !selectedEvents || !selectedQuota || !potentialWin || !form) {
+                return;
+            }
+
+            function getCurrentSelection() {
+                const option = matchSelect.options[matchSelect.selectedIndex];
+                if (!option) {
+                    return null;
+                }
+
+                const segno = segnoSelect.value;
+                let quota = 0;
+                if (segno === '1') {
+                    quota = parseFloat(option.dataset.q1 || '0');
+                } else if (segno === 'X') {
+                    quota = parseFloat(option.dataset.qx || '0');
+                } else {
+                    quota = parseFloat(option.dataset.q2 || '0');
+                }
+
+                return {
+                    match_index: parseInt(option.value, 10),
+                    segno,
+                    quota,
+                    evento: option.textContent.trim(),
+                };
+            }
+
+            function refreshPreview() {
+                let quotaTotale = 1;
+                for (const selezione of selezioni) {
+                    quotaTotale *= selezione.quota;
+                }
+
+                const importo = parseFloat(importoInput.value || '0');
+                const quotaFinale = selezioni.length > 0 ? quotaTotale : 0;
+                const vincita = quotaFinale * importo;
+
+                selectedEvents.textContent = String(selezioni.length);
+                selectedQuota.textContent = quotaFinale > 0 ? quotaFinale.toFixed(2) : '-';
+                potentialWin.textContent = quotaFinale > 0 && importo > 0 ? vincita.toFixed(2) + ' EUR' : '-';
+            }
+
+            function renderSelections() {
+                if (selezioni.length === 0) {
+                    selectionList.innerHTML = '<p class="selection-empty">Nessun evento aggiunto. Seleziona partita + segno e premi "Aggiungi evento".</p>';
+                } else {
+                    selectionList.innerHTML = selezioni.map((selezione, idx) => {
+                        const quotaTxt = Number(selezione.quota).toFixed(2);
+                        return `
+                            <div class="selection-item">
+                                <span>${idx + 1}. ${selezione.evento} | ${selezione.segno} @ ${quotaTxt}</span>
+                                <button type="button" class="selection-remove" data-remove-index="${idx}">Rimuovi</button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                selezioniJsonInput.value = JSON.stringify(selezioni.map((selezione) => ({
+                    match_index: selezione.match_index,
+                    segno: selezione.segno,
+                })));
+                submitSchedinaBtn.disabled = selezioni.length === 0;
+                refreshPreview();
+            }
+
+            addSelectionBtn.addEventListener('click', function () {
+                const selezione = getCurrentSelection();
+                if (!selezione || !Number.isFinite(selezione.match_index) || selezione.quota <= 0) {
+                    alert('Selezione non valida');
+                    return;
+                }
+
+                const existingIndex = selezioni.findIndex((item) => item.match_index === selezione.match_index);
+                if (existingIndex >= 0) {
+                    selezioni[existingIndex] = selezione;
+                } else {
+                    selezioni.push(selezione);
+                }
+
+                renderSelections();
+            });
+
+            selectionList.addEventListener('click', function (event) {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) {
+                    return;
+                }
+
+                const indexRaw = target.getAttribute('data-remove-index');
+                if (indexRaw === null) {
+                    return;
+                }
+
+                const index = parseInt(indexRaw, 10);
+                if (!Number.isFinite(index) || index < 0 || index >= selezioni.length) {
+                    return;
+                }
+
+                selezioni.splice(index, 1);
+                renderSelections();
+            });
+
+            form.addEventListener('submit', function (event) {
+                if (selezioni.length === 0) {
+                    event.preventDefault();
+                    alert('Aggiungi almeno un evento alla schedina');
+                }
+            });
+
+            importoInput.addEventListener('input', refreshPreview);
+
+            matchSelect.addEventListener('change', function () {
+                const current = getCurrentSelection();
+                if (!current) {
+                    return;
+                }
+
+                const existingIndex = selezioni.findIndex((item) => item.match_index === current.match_index);
+                if (existingIndex >= 0) {
+                    current.segno = segnoSelect.value;
+                    selezioni[existingIndex] = current;
+                    renderSelections();
+                }
+            });
+
+            segnoSelect.addEventListener('change', function () {
+                const current = getCurrentSelection();
+                if (!current) {
+                    return;
+                }
+
+                const existingIndex = selezioni.findIndex((item) => item.match_index === current.match_index);
+                if (existingIndex >= 0) {
+                    selezioni[existingIndex] = current;
+                    renderSelections();
+                }
+            });
+
+            renderSelections();
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

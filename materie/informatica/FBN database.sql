@@ -62,6 +62,25 @@ CREATE TABLE `PARTITA` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `PUNTATA`
+--
+
+CREATE TABLE `PUNTATA` (
+  `id` int(11) NOT NULL,
+  `id_schedina` int(11) NOT NULL,
+  `email_utente` varchar(254) NOT NULL,
+  `evento` varchar(100) NOT NULL,
+  `segno` char(1) NOT NULL,
+  `quota` float NOT NULL,
+  `importo` float NOT NULL,
+  `vincita_potenziale` float NOT NULL,
+  `stato` varchar(20) NOT NULL DEFAULT 'APERTO',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `PERMESSO`
 --
 
@@ -202,6 +221,14 @@ ALTER TABLE `PARTITA`
   ADD PRIMARY KEY (`squadra_casa`,`data`);
 
 --
+-- Indexes for table `PUNTATA`
+--
+ALTER TABLE `PUNTATA`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_schedina` (`id_schedina`),
+  ADD KEY `email_utente` (`email_utente`);
+
+--
 -- Indexes for table `PERMESSO`
 --
 ALTER TABLE `PERMESSO`
@@ -252,6 +279,12 @@ ALTER TABLE `PERMESSO`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `PUNTATA`
+--
+ALTER TABLE `PUNTATA`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `RUOLO`
 --
 ALTER TABLE `RUOLO`
@@ -272,6 +305,13 @@ ALTER TABLE `SCHEDINA`
 --
 ALTER TABLE `CONTO`
   ADD CONSTRAINT `CONTO_ibfk_1` FOREIGN KEY (`email_intestatario`) REFERENCES `UTENTE` (`email`);
+
+--
+-- Constraints for table `PUNTATA`
+--
+ALTER TABLE `PUNTATA`
+  ADD CONSTRAINT `PUNTATA_ibfk_1` FOREIGN KEY (`id_schedina`) REFERENCES `SCHEDINA` (`id`),
+  ADD CONSTRAINT `PUNTATA_ibfk_2` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`);
 
 --
 -- Constraints for table `RUOLO_PERMESSO`
