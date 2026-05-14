@@ -128,7 +128,12 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             $_SESSION['user_ruolo'] = $roleData['ruolo'];
             $_SESSION['user_permessi'] = $roleData['permessi'];
             
-            header('Location: sito/index.php', true, 303);
+            // Redireziona in base al ruolo
+            if ($roleData['ruolo'] === 'ADMIN') {
+                header('Location: sito/admin/dashboard.php', true, 303);
+            } else {
+                header('Location: sito/index.php', true, 303);
+            }
             exit();
         } else {
             $error = 'Email o password non validi';

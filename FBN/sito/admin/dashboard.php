@@ -7,6 +7,13 @@ error_reporting(E_ALL);
 
 include_once '../../auth_helper.php';
 
+// Controllo dalla sessione diretta
+if (!isset($_SESSION['user_ruolo']) || $_SESSION['user_ruolo'] !== 'ADMIN') {
+    header('Location: ../index.php');
+    exit();
+}
+
+// Controllo dal JWT
 $userData = getUserDataFromSession();
 
 if (!$userData) {

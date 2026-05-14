@@ -16,6 +16,12 @@ $userName = $userData['nome'] ?? '';
 $userPermissions = $userData['permessi'] ?? [];
 $canPuntaSchedina = $isLoggedIn && in_array('PUNTA_SCHEDINA', $userPermissions, true);
 
+// Redireziona admin al dashboard
+if ($isLoggedIn && isset($_SESSION['user_ruolo']) && $_SESSION['user_ruolo'] === 'ADMIN') {
+    header('Location: admin/dashboard.php');
+    exit();
+}
+
 $userSaldo = null;
 if ($isLoggedIn) {
     global $pdo;
