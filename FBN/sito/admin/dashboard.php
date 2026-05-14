@@ -227,8 +227,137 @@ $userPermissions = $userData['permessi'];
                 <?php endforeach; ?>
             </div>
         </div>
+
+        <div class="permissions-section" style="margin-top: 30px;">
+            <h4><i class="bi bi-lightning-charge"></i> Azioni Rapide</h4>
+            <p class="text-muted mb-3">Sincronizza le partite dall'API esterna e aggiorna le quote</p>
+            <button class="btn btn-lg" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; font-weight: 600;" onclick="openSyncModal()">
+                <i class="bi bi-arrow-clockwise"></i> Sincronizza Partite
+            </button>
+        </div>
+    </div>
+
+    <!-- SYNC MODAL -->
+    <div class="modal fade" id="syncModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: white;">
+                <div class="modal-header" style="border-bottom: 2px solid #667eea;">
+                    <h5 class="modal-title" style="color: #667eea;">
+                        <i class="bi bi-arrow-clockwise"></i> Sincronizza Partite
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="syncContent">
+                        <p class="text-muted mb-4">Questo sincronizzerà le partite da <strong>football-data.org</strong> e aggiornerà le quote nel database.</p>
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle"></i> <strong>Nota:</strong> Il sync può essere eseguito una volta ogni ora per evitare troppe richieste all'API.
+                        </div>
+                        <button type="button" class="btn w-100" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; font-weight: 600;" onclick="executeSyncMatches()">
+                            <i class="bi bi-play-circle"></i> Inizia Sincronizzazione
+                        </button>
+                    </div>
+                    <div id="syncLoading" style="display: none; text-align: center;">
+                        <div class="spinner-border text-success" role="status" style="margin: 20px 0;">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                        <p class="text-muted">Sincronizzazione in corso...</p>
+                    </div>
+                    <div id="syncResult" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <script>
+        const JWT_TOKEN = '<?= htmlspecialchars($_SESSION['access_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
+
+        function openSyncModal() {
+            const modal = new bootstrap.Modal(document.getElementById('syncModal'));
+            modal.show();
+            // Reset content
+            document.getElementById('syncContent').style.display = 'block';
+            document.getElementById('syncLoading').style.display = 'none';
+            document.getElementById('syncResult').style.display = 'none';
+        }
+
+        async function executeSyncMatches() {
+            const syncLoading = document.getElementById('syncLoading');
+            const syncContent = document.getElementById('syncContent');
+            const syncResult = document.getElementById('syncResult');
+
+            syncContent.style.display = 'none';
+            syncLoading.style.display = 'block';
+            syncResult.style.display = 'none';
+
+            try {
+                const response = await fetch('../../api/sync-matches.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + JWT_TOKEN
+                    }
+                });
+
+                const data = await response.json();
+
+                syncLoading.style.display = 'none';
+
+                let resultHtml = '';
+
+                if (response.ok) {
+                    if (data.status === 'success') {
+                        resultHtml = `
+                            <div class="alert alert-success mb-3">
+                                <i class="bi bi-check-circle"></i> <strong>Sincronizzazione Riuscita!</strong>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                                <p class="mb-2"><strong>Partite Inserite:</strong> <span style="color: #28a745; font-weight: 700;">${data.inserted}</span></p>
+                                <p class="mb-2"><strong>Partite Aggiornate:</strong> <span style="color: #0dcaf0; font-weight: 700;">${data.updated}</span></p>
+                                <p class="mb-0"><strong>Data Sincronizzazione:</strong> <span style="color: #667eea;">${data.synced_at}</span></p>
+                            </div>
+                            ${data.errors && data.errors.length > 0 ? `
+                                <div class="alert alert-warning mb-0">
+                                    <strong>Avvertimenti (${data.errors.length}):</strong>
+                                    <ul class="mb-0 mt-2">
+                                        ${data.errors.map(e => '<li>' + e + '</li>').join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        `;
+                    } else if (data.status === 'skipped') {
+                        resultHtml = `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-clock-history"></i> <strong>Sync Saltato</strong><br>
+                                <small>${data.message}</small><br>
+                                <small>Prossima sincronizzazione: ${data.next_sync}</small>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultHtml = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> <strong>Errore</strong><br>
+                            <small>${data.message || data.error || 'Errore sconosciuto'}</small>
+                            ${data.hint ? '<br><small style="margin-top: 10px; display: block;"><strong>Suggerimento:</strong> ' + data.hint + '</small>' : ''}
+                        </div>
+                    `;
+                }
+
+                syncResult.innerHTML = resultHtml;
+                syncResult.style.display = 'block';
+
+            } catch (error) {
+                syncLoading.style.display = 'none';
+                syncResult.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Errore di Connessione</strong><br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+                syncResult.style.display = 'block';
+                console.error('Sync error:', error);
+            }
+        }
+    </script>

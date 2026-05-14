@@ -18,6 +18,40 @@ Il database principale si trova in [materie/informatica/FBN database.sql](materi
 - Inserimento di schedine singole e multiple
 - Controllo delle puntate e calcolo della vincita potenziale
 - Aggiornamento del saldo e accredito delle vincite
+- **Sincronizzazione partite da API esterna** (football-data.org)
+
+## Sincronizzazione Partite Esterne
+
+Il sistema supporta la sincronizzazione automatica di partite reali da un'API esterna (football-data.org):
+
+### Setup
+1. Registrati su https://www.football-data.org/ (gratis, key istantanea)
+2. Salva la key nella variabile d'ambiente:
+   ```bash
+   export FOOTBALL_DATA_API_KEY="your_key_here"
+   ```
+
+### Come usare
+1. **Da Dashboard Admin**: Vai a `/FBN/sito/admin/dashboard.php` e clicca il bottone **"Sincronizza Partite"**
+2. **Via API**: POST a `/FBN/api/sync-matches.php` con JWT Bearer token (admin)
+
+### Funzionamento
+- Recupera partite da Serie A (status SCHEDULED)
+- Genera quote con formula probabilistica
+- **Upsert nel DB**: Se la partita esiste, aggiorna quote; se no, la crea
+- **Cache 1 ora**: Evita troppe richieste all'API
+- **Transazione atomica**: Nessun errore di race condition
+
+### Response
+```json
+{
+  "status": "success",
+  "inserted": 12,
+  "updated": 3,
+  "errors": [],
+  "synced_at": "2026-05-14 10:30:45"
+}
+```
 
 ## Altre funzionalita
 
