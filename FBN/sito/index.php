@@ -729,6 +729,12 @@ $partite = getPartiteCatalog($pdo);
         let adTimeRemaining = 15;
 
         function openTopupModal() {
+            if (!JWT_TOKEN || JWT_TOKEN.trim() === '') {
+                alert('Errore: sessione non valida. Ricarica la pagina.');
+                location.href = '../login.php';
+                return;
+            }
+
             // Reset timer
             adTimeRemaining = 15;
             document.getElementById('adTimer').textContent = adTimeRemaining;

@@ -3,12 +3,12 @@ session_start();
 require_once '../database.php';
 require_once '../auth_helper.php';
 
-if (!isset($_SESSION['email'])) {
+if (!isset($_SESSION['user_email'])) {
     header('Location: ../login.php');
     exit;
 }
 
-$email = $_SESSION['email'];
+$email = $_SESSION['user_email'];
 
 $stmt = $pdo->prepare("
     SELECT u.email, u.nome, u.created_at, c.saldo, c.bonus, r.nome as ruolo
