@@ -436,15 +436,20 @@ $partite = getPartiteCatalog($pdo);
             <a class="navbar-brand" href="index.php">
                 <i class="bi bi-lightning-fill"></i> FastBetNow
             </a>
-            <div class="ms-auto d-flex gap-3 align-items-center">
+            <div class="ms-auto d-flex gap-2 align-items-center">
                 <?php if ($isLoggedIn): ?>
-                    <span class="user-info">
-                        <i class="bi bi-person-circle"></i> <?= htmlspecialchars($userName) ?>
-                    </span>
-                    <span class="saldo-display">
+                    <a href="profilo.php" class="login-btn" style="background: #00d4ff; color: #16213e;">
+                        <i class="bi bi-person-circle"></i> Profilo
+                    </a>
+                    <a href="profilo.php" class="saldo-display" style="text-decoration: none;">
                         <i class="bi bi-wallet2"></i> €<?= number_format($userSaldo, 2) ?>
-                    </span>
-                    <a href="../logout.php" class="login-btn" style="background: #dc3545; color: white;">Logout</a>
+                    </a>
+                    <button class="login-btn" style="background: #28a745; color: white;" onclick="openTopupModal()">
+                        <i class="bi bi-plus-circle"></i> Ricarica
+                    </button>
+                    <a href="../logout.php" class="login-btn" style="background: #dc3545; color: white;">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
                 <?php else: ?>
                     <a href="../login.php" class="login-btn">Login</a>
                 <?php endif; ?>
@@ -559,6 +564,7 @@ $partite = getPartiteCatalog($pdo);
     </div>
 
     <script>
+        const JWT_TOKEN = '<?= htmlspecialchars($_SESSION['access_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
         const selections = [];
         const schedinaItems = document.getElementById('schedinaItems');
         const eventCount = document.getElementById('eventCount');
@@ -668,5 +674,92 @@ $partite = getPartiteCatalog($pdo);
         }
     </script>
 
+    <!-- TOPUP MODAL -->
+    <?php if ($isLoggedIn): ?>
+    <div class="modal fade" id="topupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #0f3460; border: 2px solid #00d4ff;">
+                <div class="modal-header" style="border-bottom: 2px solid #00d4ff;">
+                    <h5 class="modal-title" style="color: #00d4ff;">
+                        <i class="bi bi-plus-circle"></i> Ricarica Saldo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: brightness(2);"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="topupForm">
+                        <div class="mb-3">
+                            <label for="topupAmount" class="form-label" style="color: #ddd;">Importo (max €50)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background: #16213e; border-color: #00d4ff; color: #00d4ff;">€</span>
+                                <input type="number" class="form-control" id="topupAmount" placeholder="0.00" min="0.01" max="50" step="0.01" required style="background: #16213e; border-color: #00d4ff; color: #00d4ff;">
+                            </div>
+                            <small class="text-muted">Massimo €50 per ricarica</small>
+                        </div>
+                        <div id="topupMessage" style="display: none; margin-bottom: 15px;"></div>
+                        <button type="submit" class="btn w-100" style="background: #28a745; color: white; font-weight: 600;">
+                            <i class="bi bi-credit-card"></i> Ricarica Ora
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openTopupModal() {
+            const modal = new bootstrap.Modal(document.getElementById('topupModal'));
+            modal.show();
+        }
+
+        const topupForm = document.getElementById('topupForm');
+        if (topupForm) {
+            topupForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const amount = parseFloat(document.getElementById('topupAmount').value);
+                const messageDiv = document.getElementById('topupMessage');
+                
+                if (amount <= 0 || amount > 50) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.innerHTML = '<div class="alert alert-danger">Importo non valido (0.01 - 50.00)</div>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('../api/wallet/topup-ad.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + getStoredToken()
+                        },
+                        body: JSON.stringify({ amount: amount })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        messageDiv.style.display = 'block';
+                        messageDiv.innerHTML = '<div class="alert alert-success">✓ Ricarica completata! Nuovo saldo: €' + data.new_saldo.toFixed(2) + '</div>';
+                        
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        messageDiv.style.display = 'block';
+                        messageDiv.innerHTML = '<div class="alert alert-danger">✗ Errore: ' + (data.error || 'Sconosciuto') + '</div>';
+                    }
+                } catch (error) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.innerHTML = '<div class="alert alert-danger">✗ Errore di connessione</div>';
+                    console.error('Topup error:', error);
+                }
+            });
+        }
+
+        function getStoredToken() {
+            return JWT_TOKEN || '';
+        }
+    </script>
 </body>

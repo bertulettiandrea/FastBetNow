@@ -19,18 +19,16 @@ FastBetNow JWT/API
 
 
 
-rotte da creare 
-rotte per visualizzare profilo utente:
+rotte create
 - GET /FBN/sito/profilo.php (pagina protetta)
-
-rotte per wallet e ricarica con pubblicita:
 - POST /FBN/api/wallet/topup-ad (ricarica saldo con annunci)
 - GET /FBN/api/wallet/balance (saldo attuale + bonus)
 - GET /FBN/api/wallet/transactions (storico schedine con limite e offset)
-
-Rotte per schedine:
 - POST /FBN/api/betslips (creazione schedina con array selezioni)
 - GET /FBN/api/betslips?id={id} (dettagli schedina con puntate)
-
-rotte per eventi/quote:
 - GET /FBN/api/matches/odds.php?id={id} (quote casa/pareggio/trasferta)
+
+NOTE:
+- Tutte le API usano Bearer JWT token
+- Il token è disponibile automaticamente da sessione nella pagina HTML
+- Modal ricarica integrato direttamente nel menu principale
