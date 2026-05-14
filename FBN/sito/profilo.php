@@ -20,7 +20,7 @@ $permissions = [];
 
 try {
     $stmt = $pdo->prepare("
-        SELECT u.email, u.nome, u.created_at, c.saldo, c.bonus, r.nome as ruolo
+        SELECT u.email, u.nome, u.cognome, c.saldo, c.bonus, r.nome as ruolo
         FROM UTENTE u
         LEFT JOIN CONTO c ON u.email = c.email_intestatario
         LEFT JOIN UTENTE_RUOLO ur ON u.email = ur.email_utente
@@ -86,6 +86,11 @@ try {
         </div>
 
         <div class="section">
+            <div class="label">Cognome:</div>
+            <div class="value"><?php echo htmlspecialchars($userData['cognome'] ?? 'Non impostato'); ?></div>
+        </div>
+
+        <div class="section">
             <div class="label">Ruolo:</div>
             <div class="value"><?php echo htmlspecialchars($userData['ruolo'] ?? 'Utente'); ?></div>
         </div>
@@ -98,17 +103,6 @@ try {
         <div class="section">
             <div class="label">Bonus:</div>
             <div class="value">€ <?php echo number_format($userData['bonus'] ?? 0, 2, ',', '.'); ?></div>
-        </div>
-
-        <div class="section">
-            <div class="label">Data Registrazione:</div>
-            <div class="value"><?php 
-                if ($userData['created_at']) {
-                    echo date('d/m/Y H:i', strtotime($userData['created_at']));
-                } else {
-                    echo 'Non disponibile';
-                }
-            ?></div>
         </div>
 
         <div class="section">
