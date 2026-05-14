@@ -120,4 +120,51 @@ function getUserPermissions() {
     $userData = getUserDataFromSession();
     return $userData ? $userData['permessi'] : [];
 }
+
+function verifyJWT($token) {
+    if (!$token) {
+        return false;
+    }
+    $decoded = decodeJWT($token);
+    if (!$decoded) {
+        return false;
+    }
+    if (isset($decoded['exp']) && $decoded['exp'] < time()) {
+        return false;
+    }
+    return true;
+}
+
+function hasPermissionJWT($pdo, $email, $permissionCode) {
+    $stmt = $pdo->prepare("
+        SELECT 1 FROM UTENTE_RUOLO ur
+        JOIN RUOLO_PERMESSO rp ON ur.id_ruolo = rp.id_ruolo
+        JOIN PERMESSO p ON rp.id_permesso = p.id
+        WHERE ur.email_utente = ? AND p.codice = ?
+    ");
+    $stmt->execute([$email, $permissionCode]);
+    return $stmt->fetch() !== false;
+}
+
+function getBearerToken() {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? '';
+
+    if (!$authHeader && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+
+    if (!$authHeader && function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+
+    if (preg_match('/Bearer\s+(.+)/', $authHeader, $matches)) {
+        return $matches[1];
+    }
+
+    return null;
+}
 ?>

@@ -15,21 +15,22 @@ FastBetNow JWT/API
 - POST /FBN/JWT/login_api.php -> login API con access token + refresh token
 - /FBN/JWT/manage_permissions.php -> endpoint gestione permessi (usa token Bearer, non forza un metodo HTTP preciso)
 - /FBN/JWT/refresh.php -> file incompleto, non e una rotta realmente funzionante nello stato attuale
+- POST /FBN/api/sync-matches -> sincronizza partite da football-data.org e inserisce quote nel DB (protetto JWT, richiede CREA_PARTITA)
 
 
 
 rotte da creare 
-rotte per visualizzare pofilo utente:
-- GET /FBN/sito/profilo.php (pagina)
+rotte per visualizzare profilo utente:
+- GET /FBN/sito/profilo.php (pagina protetta)
 
 rotte per wallet e ricarica con pubblicita:
-- POST /FBN/api/wallet/topup-ad
-- GET /FBN/api/wallet/balance
-- GET /FBN/api/wallet/transactions
+- POST /FBN/api/wallet/topup-ad (ricarica saldo con annunci)
+- GET /FBN/api/wallet/balance (saldo attuale + bonus)
+- GET /FBN/api/wallet/transactions (storico schedine con limite e offset)
 
 Rotte per schedine:
-- POST /FBN/api/betslips (creazione schedina)
-- GET /FBN/api/betslips/{id}
+- POST /FBN/api/betslips (creazione schedina con array selezioni)
+- GET /FBN/api/betslips?id={id} (dettagli schedina con puntate)
 
 rotte per eventi/quote:
-- GET /FBN/api/matches/{id}/odds
+- GET /FBN/api/matches/odds.php?id={id} (quote casa/pareggio/trasferta)
