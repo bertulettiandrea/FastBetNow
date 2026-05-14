@@ -15,31 +15,40 @@ if (!isDatabaseConnected()) {
 
 $email = $_SESSION['user_email'];
 
-$stmt = $pdo->prepare("
-    SELECT u.email, u.nome, u.created_at, c.saldo, c.bonus, r.nome as ruolo
-    FROM UTENTE u
-    LEFT JOIN CONTO c ON u.email = c.email_intestatario
-    LEFT JOIN UTENTE_RUOLO ur ON u.email = ur.email_utente
-    LEFT JOIN RUOLO r ON ur.id_ruolo = r.id
-    WHERE u.email = ?
-");
-$stmt->execute([$email]);
-$userData = $stmt->fetch();
+$userData = null;
+$permissions = [];
 
-if (!$userData) {
-    header('Location: ../logout.php');
-    exit;
+try {
+    $stmt = $pdo->prepare("
+        SELECT u.email, u.nome, u.created_at, c.saldo, c.bonus, r.nome as ruolo
+        FROM UTENTE u
+        LEFT JOIN CONTO c ON u.email = c.email_intestatario
+        LEFT JOIN UTENTE_RUOLO ur ON u.email = ur.email_utente
+        LEFT JOIN RUOLO r ON ur.id_ruolo = r.id
+        WHERE u.email = ?
+    ");
+    $stmt->execute([$email]);
+    $userData = $stmt->fetch();
+
+    if (!$userData) {
+        header('Location: ../logout.php');
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT p.codice, p.descrizione
+        FROM UTENTE_RUOLO ur
+        JOIN RUOLO_PERMESSO rp ON ur.id_ruolo = rp.id_ruolo
+        JOIN PERMESSO p ON rp.id_permesso = p.id
+        WHERE ur.email_utente = ?
+    ");
+    $stmt->execute([$email]);
+    $permissions = $stmt->fetchAll();
+} catch (PDOException $e) {
+    error_log("Errore profilo.php: " . $e->getMessage());
+    http_response_code(500);
+    die("Errore nel caricamento del profilo: " . htmlspecialchars($e->getMessage()));
 }
-
-$stmt = $pdo->prepare("
-    SELECT DISTINCT p.codice, p.descrizione
-    FROM UTENTE_RUOLO ur
-    JOIN RUOLO_PERMESSO rp ON ur.id_ruolo = rp.id_ruolo
-    JOIN PERMESSO p ON rp.id_permesso = p.id
-    WHERE ur.email_utente = ?
-");
-$stmt->execute([$email]);
-$permissions = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -93,7 +102,13 @@ $permissions = $stmt->fetchAll();
 
         <div class="section">
             <div class="label">Data Registrazione:</div>
-            <div class="value"><?php echo date('d/m/Y H:i', strtotime($userData['created_at'])); ?></div>
+            <div class="value"><?php 
+                if ($userData['created_at']) {
+                    echo date('d/m/Y H:i', strtotime($userData['created_at']));
+                } else {
+                    echo 'Non disponibile';
+                }
+            ?></div>
         </div>
 
         <div class="section">
