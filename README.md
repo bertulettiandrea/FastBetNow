@@ -53,6 +53,19 @@ Il sistema supporta la sincronizzazione automatica di partite reali da un'API es
 }
 ```
 
+## Ricarica Saldo (Rewarded Ads System)
+
+Gli utenti possono ricaricare il saldo guardando annunci pubblicitari:
+
+1. Clicca il bottone **"Ricarica"** nel menu principale
+2. Si apre un modal con un simulato annuncio pubblicitario
+3. **Timer 15 secondi** che conta alla rovescia
+4. Al termine del timer, il bottone "RICARICA ORA" si abilita
+5. Clicca il bottone per ricevere **€5.00 fissi**
+6. Il saldo viene aggiornato automaticamente
+
+Questo sistema incoraggia l'engagement senza permettere all'utente di ricaricare quanto vuole in modo illimitato.
+
 ## Altre funzionalita
 
 - Login utente con JWT e assegnazione del ruolo in base ai permessi disponibili.

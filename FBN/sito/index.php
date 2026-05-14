@@ -681,25 +681,40 @@ $partite = getPartiteCatalog($pdo);
             <div class="modal-content" style="background: #0f3460; border: 2px solid #00d4ff;">
                 <div class="modal-header" style="border-bottom: 2px solid #00d4ff;">
                     <h5 class="modal-title" style="color: #00d4ff;">
-                        <i class="bi bi-plus-circle"></i> Ricarica Saldo
+                        <i class="bi bi-plus-circle"></i> Guarda un Annuncio e Ricarica
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: brightness(2);"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="topupForm">
-                        <div class="mb-3">
-                            <label for="topupAmount" class="form-label" style="color: #ddd;">Importo (max €50)</label>
-                            <div class="input-group">
-                                <span class="input-group-text" style="background: #16213e; border-color: #00d4ff; color: #00d4ff;">€</span>
-                                <input type="number" class="form-control" id="topupAmount" placeholder="0.00" min="0.01" max="50" step="0.01" required style="background: #16213e; border-color: #00d4ff; color: #00d4ff;">
-                            </div>
-                            <small class="text-muted">Massimo €50 per ricarica</small>
+                <div class="modal-body" style="text-align: center;">
+                    <div id="adContainer" style="background: #16213e; border-radius: 8px; padding: 30px; margin-bottom: 20px; border: 2px solid #00d4ff;">
+                        <div style="font-size: 3rem; color: #00d4ff; margin-bottom: 15px;">
+                            <i class="bi bi-camera-video"></i>
                         </div>
-                        <div id="topupMessage" style="display: none; margin-bottom: 15px;"></div>
-                        <button type="submit" class="btn w-100" style="background: #28a745; color: white; font-weight: 600;">
-                            <i class="bi bi-credit-card"></i> Ricarica Ora
-                        </button>
-                    </form>
+                        <p style="color: #ddd; font-size: 1.1rem; margin-bottom: 20px;">
+                            <strong>Guarda questo annuncio pubblicitario</strong>
+                        </p>
+                        <div id="adTimer" style="font-size: 2.5rem; color: #28a745; font-weight: 700; margin-bottom: 15px;">
+                            15
+                        </div>
+                        <p style="color: #888; font-size: 0.9rem;">
+                            Secondi rimanenti...
+                        </p>
+                    </div>
+                    
+                    <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="color: #00d4ff; margin-bottom: 10px; font-weight: 600;">
+                            <i class="bi bi-gift"></i> Ricompensa
+                        </p>
+                        <p style="color: #28a745; font-size: 2rem; font-weight: 700; margin: 0;">
+                            +€5.00
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn w-100" id="claimButton" style="background: #28a745; color: white; font-weight: 600; padding: 12px; font-size: 1.1rem;" onclick="claimReward()" disabled>
+                        <i class="bi bi-check-circle"></i> RICARICA ORA
+                    </button>
+                    
+                    <div id="topupMessage" style="display: none; margin-top: 15px;"></div>
                 </div>
             </div>
         </div>
@@ -708,58 +723,93 @@ $partite = getPartiteCatalog($pdo);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const JWT_TOKEN = '<?= htmlspecialchars($_SESSION['access_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
+
+        let adTimerInterval = null;
+        let adTimeRemaining = 15;
+
         function openTopupModal() {
+            // Reset timer
+            adTimeRemaining = 15;
+            document.getElementById('adTimer').textContent = adTimeRemaining;
+            document.getElementById('claimButton').disabled = true;
+            document.getElementById('claimButton').style.background = '#999';
+            document.getElementById('claimButton').style.cursor = 'not-allowed';
+            document.getElementById('topupMessage').style.display = 'none';
+            document.getElementById('adContainer').style.display = 'block';
+
             const modal = new bootstrap.Modal(document.getElementById('topupModal'));
             modal.show();
+
+            // Avvia il timer
+            if (adTimerInterval) clearInterval(adTimerInterval);
+            
+            adTimerInterval = setInterval(() => {
+                adTimeRemaining--;
+                document.getElementById('adTimer').textContent = adTimeRemaining;
+
+                if (adTimeRemaining <= 0) {
+                    clearInterval(adTimerInterval);
+                    // Abilita il bottone
+                    document.getElementById('claimButton').disabled = false;
+                    document.getElementById('claimButton').style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                    document.getElementById('claimButton').style.cursor = 'pointer';
+                    document.getElementById('adTimer').textContent = '✓';
+                    document.getElementById('adTimer').style.color = '#28a745';
+                }
+            }, 1000);
         }
 
-        const topupForm = document.getElementById('topupForm');
-        if (topupForm) {
-            topupForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const amount = parseFloat(document.getElementById('topupAmount').value);
-                const messageDiv = document.getElementById('topupMessage');
-                
-                if (amount <= 0 || amount > 50) {
+        async function claimReward() {
+            const claimButton = document.getElementById('claimButton');
+            const messageDiv = document.getElementById('topupMessage');
+            const adContainer = document.getElementById('adContainer');
+
+            claimButton.disabled = true;
+            adContainer.style.display = 'none';
+
+            try {
+                const response = await fetch('../api/wallet/topup-ad.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + JWT_TOKEN
+                    },
+                    body: JSON.stringify({ amount: 5.0 })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
                     messageDiv.style.display = 'block';
-                    messageDiv.innerHTML = '<div class="alert alert-danger">Importo non valido (0.01 - 50.00)</div>';
-                    return;
-                }
-
-                try {
-                    const response = await fetch('../api/wallet/topup-ad.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + getStoredToken()
-                        },
-                        body: JSON.stringify({ amount: amount })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        messageDiv.style.display = 'block';
-                        messageDiv.innerHTML = '<div class="alert alert-success">✓ Ricarica completata! Nuovo saldo: €' + data.new_saldo.toFixed(2) + '</div>';
-                        
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        messageDiv.style.display = 'block';
-                        messageDiv.innerHTML = '<div class="alert alert-danger">✗ Errore: ' + (data.error || 'Sconosciuto') + '</div>';
-                    }
-                } catch (error) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success" style="background: rgba(40, 167, 69, 0.2); border-color: #28a745; color: #28a745;">
+                            <i class="bi bi-check-circle"></i> <strong>Ricarica Completata!</strong><br>
+                            <small>Hai ricevuto €5.00</small><br>
+                            <small>Nuovo saldo: €${data.new_saldo.toFixed(2)}</small>
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
                     messageDiv.style.display = 'block';
-                    messageDiv.innerHTML = '<div class="alert alert-danger">✗ Errore di connessione</div>';
-                    console.error('Topup error:', error);
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger" style="background: rgba(220, 53, 69, 0.2); border-color: #dc3545; color: #dc3545;">
+                            <i class="bi bi-exclamation-triangle"></i> <strong>Errore:</strong> ${data.error || 'Sconosciuto'}
+                        </div>
+                    `;
                 }
-            });
-        }
-
-        function getStoredToken() {
-            return JWT_TOKEN || '';
+            } catch (error) {
+                messageDiv.style.display = 'block';
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger" style="background: rgba(220, 53, 69, 0.2); border-color: #dc3545; color: #dc3545;">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Errore di Connessione</strong>
+                    </div>
+                `;
+                console.error('Claim error:', error);
+            }
         }
     </script>
 </body>
