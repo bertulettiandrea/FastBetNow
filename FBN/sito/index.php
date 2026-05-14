@@ -447,9 +447,9 @@ $partite = getPartiteCatalog($pdo);
                     <a href="profilo.php" class="login-btn" style="background: #00d4ff; color: #16213e;">
                         <i class="bi bi-person-circle"></i> Profilo
                     </a>
-                    <a href="profilo.php" class="saldo-display" style="text-decoration: none;">
+                    <span class="saldo-display">
                         <i class="bi bi-wallet2"></i> €<?= number_format($userSaldo, 2) ?>
-                    </a>
+                    </span>
                     <button class="login-btn" style="background: #28a745; color: white;" onclick="openTopupModal()">
                         <i class="bi bi-plus-circle"></i> Ricarica
                     </button>
