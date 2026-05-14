@@ -21,16 +21,23 @@ function placeSchedinaMultiplaBet(
         throw new InvalidArgumentException('Aggiungi almeno un evento alla schedina');
     }
 
+    // Valida e normalizza le selezioni
     $selezioniNormalizzate = [];
     $quotaTotale = 1.0;
 
     foreach ($selezioni as $selezione) {
-        $evento = trim((string) ($selezione['evento'] ?? ''));
+        $idPartita = (int) ($selezione['id_partita'] ?? 0);
+        $squadraCasa = trim((string) ($selezione['squadra_casa'] ?? ''));
+        $squadraTrasferta = trim((string) ($selezione['squadra_trasferta'] ?? ''));
         $segno = (string) ($selezione['segno'] ?? '');
         $quota = round((float) ($selezione['quota'] ?? 0), 2);
 
-        if ($evento === '') {
-            throw new InvalidArgumentException('Evento non valido');
+        if ($idPartita <= 0) {
+            throw new InvalidArgumentException('ID partita non valido');
+        }
+
+        if ($squadraCasa === '' || $squadraTrasferta === '') {
+            throw new InvalidArgumentException('Nome squadra non valido');
         }
 
         if (!in_array($segno, ['1', 'X', '2'], true)) {
@@ -42,7 +49,9 @@ function placeSchedinaMultiplaBet(
         }
 
         $selezioniNormalizzate[] = [
-            'evento' => $evento,
+            'id_partita' => $idPartita,
+            'squadra_casa' => $squadraCasa,
+            'squadra_trasferta' => $squadraTrasferta,
             'segno' => $segno,
             'quota' => $quota,
         ];
@@ -51,11 +60,12 @@ function placeSchedinaMultiplaBet(
     }
 
     $quotaTotale = round($quotaTotale, 2);
-    $vincitaTotale = round($importo * $quotaTotale, 2);
+    $vincitaPotenziale = round($importo * $quotaTotale, 2);
 
     try {
         $pdo->beginTransaction();
 
+        // Verifica saldo
         $stmtSaldo = $pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ? FOR UPDATE');
         $stmtSaldo->execute([$emailUtente]);
         $conto = $stmtSaldo->fetch();
@@ -69,21 +79,29 @@ function placeSchedinaMultiplaBet(
             throw new RuntimeException('Saldo insufficiente');
         }
 
-        $stmtSchedina = $pdo->prepare('INSERT INTO SCHEDINA (esito, puntata) VALUES (NULL, ?)');
-        $stmtSchedina->execute([$importo]);
+        // Crea la schedina
+        $stmtSchedina = $pdo->prepare(
+            'INSERT INTO SCHEDINA (email_utente, importo_totale, quota_totale, vincita_potenziale, esito, stato) 
+             VALUES (?, ?, ?, ?, NULL, ?)'
+        );
+        $stmtSchedina->execute([$emailUtente, $importo, $quotaTotale, $vincitaPotenziale, 'APERTO']);
         $schedinaId = (int) $pdo->lastInsertId();
 
+        // Inserisci le puntate
         $stmtPuntata = $pdo->prepare(
-            'INSERT INTO PUNTATA (id_schedina, email_utente, evento, segno, quota, importo, vincita_potenziale, stato) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO PUNTATA (id_schedina, id_partita, email_utente, squadra_casa, squadra_trasferta, segno, quota, importo, vincita_potenziale, stato) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         $puntataIds = [];
         foreach ($selezioniNormalizzate as $selezione) {
-            $vincitaEvento = round($importo * (float) $selezione['quota'], 2);
+            $vincitaEvento = round($importo * $selezione['quota'], 2);
             $stmtPuntata->execute([
                 $schedinaId,
+                $selezione['id_partita'],
                 $emailUtente,
-                $selezione['evento'],
+                $selezione['squadra_casa'],
+                $selezione['squadra_trasferta'],
                 $selezione['segno'],
                 $selezione['quota'],
                 $importo,
@@ -93,9 +111,11 @@ function placeSchedinaMultiplaBet(
             $puntataIds[] = (int) $pdo->lastInsertId();
         }
 
+        // Aggiorna il saldo
         $stmtAggiornaSaldo = $pdo->prepare('UPDATE CONTO SET saldo = saldo - ? WHERE email_intestatario = ?');
         $stmtAggiornaSaldo->execute([$importo, $emailUtente]);
 
+        // Leggi il nuovo saldo
         $stmtNuovoSaldo = $pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ?');
         $stmtNuovoSaldo->execute([$emailUtente]);
         $nuovoSaldo = (float) $stmtNuovoSaldo->fetchColumn();
@@ -107,7 +127,7 @@ function placeSchedinaMultiplaBet(
             'puntata_ids' => $puntataIds,
             'numero_eventi' => count($selezioniNormalizzate),
             'quota_totale' => $quotaTotale,
-            'vincita_potenziale_totale' => $vincitaTotale,
+            'vincita_potenziale_totale' => $vincitaPotenziale,
             'saldo_attuale' => round($nuovoSaldo, 2),
         ];
     } catch (Throwable $e) {

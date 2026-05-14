@@ -1,28 +1,38 @@
-<?php
-if (isset($_POST['username'])) {
-    $_SESSION['username'] = $_POST['username'];
-    header('Location: informatica.php');
-    exit;
-}
-?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>GPO - 5IE</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPO - Documentazione</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; background:#f5f7fa; color:#222; }
+        .wrap { max-width:800px; margin:80px auto; padding:24px; background:#fff; border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,0.08); }
+        h1 { margin-bottom:16px; color:#2b2b8a; }
+        ul { list-style:none; padding:0; }
+        li { margin:12px 0; }
+        a.button { display:inline-block; padding:12px 18px; background:#667eea; color:#fff; border-radius:6px; text-decoration:none; font-weight:600; }
+        a.button.secondary { background:#f093fb; }
+        .row { display:flex; gap:12px; flex-wrap:wrap; }
+    </style>
 </head>
 <body>
-<div class="container py-5">
-    <h1>GPO - Attività</h1>
-    <ul>
-        <li><a href="gpo/chart/index.php">Esercizio 1 - chart</a></li>
-        <li><a href="gpo/diagrammi/index.php">Esercizio 2 - Diagramma dei casi d'uso</a></li>
-        <li><a href="gpo/diagrammi/index2.php">Esercizio 3 - Diagramma delle classi</a></li>
-        <li><a href="gpo/GANT/index.php">Esercizio 4 - Diagramma di GANTT</a></li>
-        <li><a href="gpo/ER/index.php">Esercizio 5 - Diagramma ER</a></li>
-    </ul>
-    <a href="index.php" class="btn btn-secondary mt-4">Torna alla Home</a>
-</div>
+    <div class="wrap">
+        <h1>Documentazione GPO</h1>
+        <p>Seleziona uno dei manuali o dei diagrammi. Le pagine dei diagrammi mostrano direttamente le immagini dei documenti.</p>
+
+        <h2>Manuali</h2>
+        <div class="row">
+            <a class="button" href="materie/gpo/docs/manuale_utente.html" target="_blank">Manuale Utente</a>
+            <a class="button secondary" href="materie/gpo/docs/manuale_utente.html" target="_blank">Manuale Admin</a>
+        </div>
+
+        <h2 style="margin-top:24px">Diagrammi</h2>
+        <div class="row">
+            <a class="button" href="materie/gpo/docs/diagram_er.html" target="_blank">Diagramma ER</a>
+            <a class="button secondary" href="materie/gpo/docs/diagram_usecases.html" target="_blank">Diagramma Casi d'Uso</a>
+            <a class="button" href="materie/gpo/docs/diagram_classi.html" target="_blank">Diagramma Classi</a>
+        </div>
+
+    </div>
 </body>
 </html>

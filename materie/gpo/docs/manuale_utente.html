@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastBetNow - Manuale Utente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-user:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .content.hidden {
+            display: none;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        footer {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: #666;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .badge-new {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-important {
+            background: #ffc107;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .button-container {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FastBetNow</h1>
+            <p class="subtitle">Piattaforma di Scommesse Sportive - Manuale Utente</p>
+            <div class="button-container">
+                <button class="btn btn-user" onclick="showSection('user-manual')">
+                    📖 Manuale Utente
+                </button>
+                <button class="btn btn-admin" onclick="showSection('admin-manual')">
+                    ⚙️ Manuale Admin
+                </button>
+            </div>
+        </header>
+
+        <!-- MANUALE UTENTE -->
+        <div id="user-manual" class="content">
+            <h2>Manuale Utente</h2>
+
+            <div class="section">
+                <h3>1. Registrazione e Login</h3>
+                
+                <h4>Registrazione</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi alla pagina di registrazione</strong>
+                    <p>Clicca su "Registrati" nella pagina principale.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Compila il modulo</strong>
+                    <p>Inserisci:</p>
+                    <ul>
+                        <li><strong>Email</strong>: Deve essere un'email valida e unica</li>
+                        <li><strong>Nome</strong>: Il tuo nome</li>
+                        <li><strong>Cognome</strong>: Il tuo cognome</li>
+                        <li><strong>Password</strong>: Almeno 8 caratteri, con maiuscole e numeri</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Accetta i termini</strong>
+                    <p>Leggi e accetta i termini di utilizzo, quindi clicca "Registrati".</p>
+                </div>
+
+                <div class="success">
+                    Registrazione completata. Ora puoi effettuare il login.
+                </div>
+
+                <h4>Login</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Inserisci credenziali</strong>
+                    <p>Inserisci email e password nella pagina di login.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca Login</strong>
+                    <p>Verrai reindirizzato al tuo dashboard personale.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>2. Visualizzazione Partite</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi al menu</strong>
+                    <p>Dalla barra di navigazione, clicca su "Partite Disponibili".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza l'elenco</strong>
+                    <p>Vedrai tutte le partite aperte con:</p>
+                    <ul>
+                        <li>Squadra casa vs trasferta</li>
+                        <li>Data e ora della partita</li>
+                        <li>Quote disponibili</li>
+                        <li>Campionato di appartenenza</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Seleziona una partita</strong>
+                    <p>Clicca sulla partita per visualizzare i dettagli e le opzioni di scommessa.</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sigla</th>
+                            <th>Significato</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1</strong></td>
+                            <td>Vittoria Casa</td>
+                            <td>Vince la squadra in casa</td>
+                        </tr>
+                        <tr>
+                            <td><strong>X</strong></td>
+                            <td>Pareggio</td>
+                            <td>Finisce in parità</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2</strong></td>
+                            <td>Vittoria Trasferta</td>
+                            <td>Vince la squadra in trasferta</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h3>3. Creazione Schedina (Singola)</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Seleziona la partita</strong>
+                    <p>Dalla lista partite, clicca su una partita.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Scegli il risultato</strong>
+                    <p>Clicca su uno dei tre pulsanti:</p>
+                    <ul>
+                        <li><strong>1</strong>: Scommetti sulla vittoria della casa</li>
+                        <li><strong>X</strong>: Scommetti sul pareggio</li>
+                        <li><strong>2</strong>: Scommetti sulla vittoria della trasferta</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Inserisci l'importo</strong>
+                    <p>Digita l'importo che vuoi scommettere (minimo: 0,50€, massimo: illimitato).</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Visualizza i calcoli</strong>
+                    <p>Vedrai automaticamente:</p>
+                    <ul>
+                        <li><strong>Quota</strong>: Il moltiplicatore della scommessa</li>
+                        <li><strong>Vincita Potenziale</strong>: Importo × Quota</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <strong>Conferma la schedina</strong>
+                    <p>Clicca il pulsante "Piazza Schedina" per confermare.</p>
+                </div>
+
+                <div class="success">
+                    Schedina confermata. L'importo è stato detratto dal tuo conto.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>4. Creazione Schedina Multipla</h3>
+
+                <div class="warning">
+                    ⚠️ Una schedina multipla combina più partite. Se TUTTE le tue previsioni sono corrette, vinci. Se anche una è sbagliata, perdi tutto.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Aggiungi partite</strong>
+                    <p>Dopo aver selezionato la prima partita e il risultato, clicca "Aggiungi altra partita".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Ripeti il processo</strong>
+                    <p>Seleziona una nuova partita, scegli il risultato e inserisci l'importo.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Visualizza il riepilogo</strong>
+                    <p>Vedrai:</p>
+                    <ul>
+                        <li>Elenco di tutte le puntate</li>
+                        <li>Importo totale</li>
+                        <li>Quota totale (prodotto di tutte le quote)</li>
+                        <li>Vincita potenziale totale</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Conferma</strong>
+                    <p>Clicca "Piazza Schedina Multipla" per confermare.</p>
+                </div>
+
+                <div class="info">
+                    ℹ️ <strong>Esempio:</strong> Scommetti 10€ su Inter (quota 2.10) e 10€ su Manchester City (quota 2.20).
+                    <br>Quota totale: 2.10 × 2.20 = 4.62
+                    <br>Vincita potenziale: 20€ × 4.62 = 92.40€
+                    <br>Se entrambi i risultati sono corretti, vinci 92.40€. Se uno è sbagliato, perdi 20€.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>5. Consultazione Risultati</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi alla sezione Risultati</strong>
+                    <p>Dal menu, clicca su "I Miei Risultati".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza le tue schedu</strong>
+                    <p>Vedrai un elenco di tutte le schedu che hai creato con stato:</p>
+                    <ul>
+                        <li><strong>APERTA</strong>: In attesa dei risultati</li>
+                        <li><strong>VINTA</strong>: Hai indovinato, soldi accreditati</li>
+                        <li><strong>PERSA</strong>: Hai sbagliato, soldi persi</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Visualizza i dettagli</strong>
+                    <p>Clicca su una schedina per vedere:</p>
+                    <ul>
+                        <li>Data di creazione</li>
+                        <li>Importo puntato</li>
+                        <li>Vincita potenziale vs reale</li>
+                        <li>Dettagli di ogni puntata</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>6. Gestione del Conto</h3>
+
+                <h4>Visualizza Saldo</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi al dashboard</strong>
+                    <p>Dopo il login, vedrai il tuo saldo nella sezione principale.</p>
+                </div>
+
+                <h4>Deposito Denaro</h4>
+                <div class="warning">
+                    ⚠️ La funzione di deposito deve essere gestita da un amministratore.
+                    <br>Contatta il supporto per effettuare un deposito.
+                </div>
+
+                <h4>Bonus e Promozioni</h4>
+                <div class="info">
+                    ℹ️ Potresti ricevere bonus promozionali che si sommano al tuo saldo.
+                    <br>Controlla la sezione "Bonus" nel tuo profilo.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>7. Profilo Utente</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi al profilo</strong>
+                    <p>Clicca su "Il Mio Profilo" nel menu in alto a destra.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza informazioni</strong>
+                    <p>Vedrai:</p>
+                    <ul>
+                        <li>Email</li>
+                        <li>Nome e Cognome</li>
+                        <li>Data di registrazione</li>
+                        <li>Saldo e bonus</li>
+                        <li>Numero di schedu create</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Modifica password</strong>
+                    <p>Clicca "Modifica Password" e inserisci la nuova password.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>8. Logout</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi al menu utente</strong>
+                    <p>Clicca sul tuo nome in alto a destra.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Seleziona Logout</strong>
+                    <p>Clicca "Esci" per terminare la sessione.</p>
+                </div>
+
+                <div class="success">
+                    Logout completato. La tua sessione è stata chiusa.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>9. Domande Frequenti (FAQ)</h3>
+
+                <h4>D: Quanto posso scommettere minimo?</h4>
+                <p>R: Il minimo è 0,50€ per singola puntata.</p>
+
+                <h4>D: Come funziona la schedina multipla?</h4>
+                <p>R: Le quote vengono moltiplicate tra loro. Se una puntata è sbagliata, perdi tutto.</p>
+
+                <h4>D: Posso annullare una schedina?</h4>
+                <p>R: Solo prima che la partita cominci. Una volta iniziata, è definitiva.</p>
+
+                <h4>D: Come vengono gestiti i soldi vinti?</h4>
+                <p>R: Le vincite vengono automaticamente accreditate al tuo saldo quando la partita finisce.</p>
+
+                <h4>D: C'è un massimo di schedina che posso creare?</h4>
+                <p>R: No, puoi crearne quante vuoi, finché hai saldo disponibile.</p>
+            </div>
+        </div>
+
+        <!-- MANUALE ADMIN -->
+        <div id="admin-manual" class="content hidden">
+            <h2>Manuale Amministratore</h2>
+
+            <div class="section">
+                <h3>1. Accesso Pannello Admin</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Login come Admin</strong>
+                    <p>Accedi con account che ha il ruolo ADMIN.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Accedi al Pannello</strong>
+                    <p>Clicca su "Pannello Admin" dalla barra di navigazione (visibile solo per admin).</p>
+                </div>
+
+                <div class="warning">
+                    ⚠️ Solo gli account con ruolo ADMIN possono accedere al pannello di amministrazione.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>2. Gestione Partite</h3>
+
+                <h4>Creazione Partita</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi alla sezione "Partite"</strong>
+                    <p>Dal pannello admin, clicca su "Gestisci Partite".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Crea Nuova Partita"</strong>
+                    <p>Ti verrà presentato un modulo.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Compila i campi:</strong>
+                    <ul>
+                        <li><strong>Squadra Casa</strong>: Nome della squadra in casa</li>
+                        <li><strong>Squadra Trasferta</strong>: Nome della squadra in trasferta</li>
+                        <li><strong>Data e Ora</strong>: Quando inizia la partita</li>
+                        <li><strong>Campionato</strong>: Lega di appartenenza (Serie A, Premier League, etc.)</li>
+                        <li><strong>Quota Casa</strong>: Moltiplicatore per vittoria casa</li>
+                        <li><strong>Quota Pareggio</strong>: Moltiplicatore per pareggio</li>
+                        <li><strong>Quota Trasferta</strong>: Moltiplicatore per vittoria trasferta</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva la partita</strong>
+                    <p>Clicca "Crea Partita". La partita sarà ora disponibile per gli utenti.</p>
+                </div>
+
+                <div class="info">
+                    ℹ️ <strong>Esempio di quote:</strong>
+                    <br>Inter vs Milan: 2.10 (casa), 3.40 (pareggio), 3.50 (trasferta)
+                    <br>Le quote devono rispecchiare le probabilità del risultato.
+                </div>
+
+                <h4>Chiusura Partita</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Seleziona la partita</strong>
+                    <p>Clicca sulla partita dall'elenco.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Chiudi Partita"</strong>
+                    <p>Una volta che la partita sta per iniziare, chiudila per non permettere altre scommesse.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Conferma</strong>
+                    <p>La partita passerà a stato CHIUSO. Nessuno può più scommettere.</p>
+                </div>
+
+                <h4>Registrazione Risultato</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Seleziona la partita giocata</strong>
+                    <p>Clicca sulla partita che è stata disputata.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Inserisci Risultato"</strong>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Inserisci il risultato finale</strong>
+                    <p>Formato: "X-Y" (es. "2-1" per Inter 2, Milan 1).</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva il risultato</strong>
+                    <p>Clicca "Salva". Il sistema calcolerà automaticamente:</p>
+                    <ul>
+                        <li>Quale risultato è stato indovinato (1, X, o 2)</li>
+                        <li>Quali schedu hanno vinto</li>
+                        <li>Accrediterà i soldi ai vincitori</li>
+                    </ul>
+                </div>
+
+                <div class="success">
+                    Risultato registrato. Le schedu sono state elaborate.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>3. Gestione Utenti</h3>
+
+                <h4>Visualizzazione Utenti</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi a "Gestisci Utenti"</strong>
+                    <p>Dal pannello admin, clicca su "Gestisci Utenti".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza l'elenco</strong>
+                    <p>Vedrai una tabella con:</p>
+                    <ul>
+                        <li>Email dell'utente</li>
+                        <li>Nome e Cognome</li>
+                        <li>Saldo attuale</li>
+                        <li>Bonus disponibile</li>
+                        <li>Ruolo assegnato</li>
+                        <li>Data di registrazione</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Ricerca utente</strong>
+                    <p>Usa il campo di ricerca per trovare un utente per email.</p>
+                </div>
+
+                <h4>Modifica Ruolo Utente</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Clicca su un utente</strong>
+                    <p>Seleziona l'utente dalla lista.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Modifica Ruolo"</strong>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Scegli nuovo ruolo</strong>
+                    <p>Opzioni:</p>
+                    <ul>
+                        <li><strong>UTENTE</strong>: Accesso limitato, può solo scommettere</li>
+                        <li><strong>ADMIN</strong>: Accesso completo al pannello di amministrazione</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva le modifiche</strong>
+                    <p>Clicca "Aggiorna Ruolo".</p>
+                </div>
+
+                <h4>Gestione Saldo Utente</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Seleziona utente</strong>
+                    <p>Clicca su un utente per visualizzare i dettagli.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza Conto</strong>
+                    <p>Vedrai saldo e bonus attuali.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Modifica Saldo</strong>
+                    <p>Clicca "Modifica Saldo" e inserisci:</p>
+                    <ul>
+                        <li><strong>Operazione</strong>: Deposito (+) o Prelievo (-)</li>
+                        <li><strong>Importo</strong>: Quanto depositare/prelevare</li>
+                        <li><strong>Motivo</strong>: Descrizione della transazione</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva</strong>
+                    <p>Clicca "Aggiorna Saldo". Il conto utente sarà modificato.</p>
+                </div>
+
+                <div class="warning">
+                    ⚠️ Usa questa funzione responsabilmente. Registra sempre il motivo della modifica.
+                </div>
+
+                <h4>Assegnazione Bonus</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Seleziona utente</strong>
+                    <p>Clicca su un utente per visualizzare i dettagli.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Assegna Bonus"</strong>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Inserisci importo bonus</strong>
+                    <p>Digita l'importo del bonus da assegnare.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva</strong>
+                    <p>Clicca "Assegna". Il bonus sarà aggiunto al conto.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>4. Visualizzazione Report</h3>
+
+                <h4>Report Scommesse</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi a "Report"</strong>
+                    <p>Dal pannello admin, clicca su "Report Scommesse".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza statistiche</strong>
+                    <p>Vedrai:</p>
+                    <ul>
+                        <li>Numero totale di schedu create</li>
+                        <li>Schedu vinte vs perse</li>
+                        <li>Importo totale puntato</li>
+                        <li>Importo totale vinto</li>
+                        <li>Utenti più attivi</li>
+                        <li>Partite più scommesse</li>
+                    </ul>
+                </div>
+
+                <h4>Filtri Report</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Applica filtri</strong>
+                    <p>Puoi filtrare per:</p>
+                    <ul>
+                        <li><strong>Data</strong>: Periodo da analizzare</li>
+                        <li><strong>Campionato</strong>: Solo scommesse su quel campionato</li>
+                        <li><strong>Stato Schedina</strong>: APERTA, VINTA, PERSA</li>
+                        <li><strong>Utente</strong>: Schedu di uno specifico utente</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza risultati</strong>
+                    <p>I dati si aggiorneranno in base ai filtri applicati.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Esporta dati</strong>
+                    <p>Clicca "Esporta CSV" per scaricare i dati in foglio di calcolo.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>5. Gestione Permessi e Ruoli</h3>
+
+                <h4>Struttura Ruoli</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ruolo</th>
+                            <th>Permessi</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>UTENTE</strong></td>
+                            <td>
+                                • VISUALIZZA_PARTITE<br>
+                                • PUNTA_SCHEDINA
+                            </td>
+                            <td>Accesso limitato, solo scommesse</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ADMIN</strong></td>
+                            <td>
+                                • CREA_PARTITA<br>
+                                • VISUALIZZA_PARTITE<br>
+                                • PUNTA_SCHEDINA<br>
+                                • GESTISCI_UTENTI
+                            </td>
+                            <td>Accesso completo al sistema</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Modifica Permessi</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi a "Gestisci Ruoli"</strong>
+                    <p>Dal pannello admin (solo per super-admin).</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Seleziona un ruolo</strong>
+                    <p>Clicca sul ruolo da modificare.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Modifica permessi</strong>
+                    <p>Spunta/deseleziona i permessi desiderati.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Salva</strong>
+                    <p>Clicca "Salva Permessi".</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>6. Procedure di Manutenzione</h3>
+
+                <h4>Backup Database</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi a "Manutenzione"</strong>
+                    <p>Dal pannello admin, clicca su "Strumenti".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Clicca "Backup Database"</strong>
+                    <p>Verrà creato un backup del database.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Scarica il file</strong>
+                    <p>Il file .sql verrà scaricato sul tuo computer.</p>
+                </div>
+
+                <div class="warning">
+                    ⚠️ Esegui backup regolarmente, almeno una volta alla settimana.
+                </div>
+
+                <h4>Log di Sistema</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accedi ai "Log di Sistema"</strong>
+                    <p>Dal pannello admin, clicca su "Log".</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Visualizza i log</strong>
+                    <p>Potrai vedere tutte le azioni importanti, inclusi:</p>
+                    <ul>
+                        <li>Login/Logout</li>
+                        <li>Creazione partite</li>
+                        <li>Modifiche a ruoli/permessi</li>
+                        <li>Errori di sistema</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Filtra per data/utente</strong>
+                    <p>Usa i filtri per trovare specifici log.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>7. Domande Frequenti Admin</h3>
+
+                <h4>D: Come cambio una quota dopo la creazione?</h4>
+                <p>R: Non puoi modificare una partita già creata. Se è stata un errore, elimina la partita e creane una nuova.</p>
+
+                <h4>D: Cosa succede se registristro un risultato sbagliato?</h4>
+                <p>R: Le schedu saranno elaborate sulla base di quel risultato. Contatta il supporto per correggere.</p>
+
+                <h4>D: Posso creare un utente manualmente?</h4>
+                <p>R: No, gli utenti si registrano autonomamente. Solo gli admin con permesso speciale possono.</p>
+
+                <h4>D: Quanti admin posso avere?</h4>
+                <p>R: Senza limiti, ma fai attenzione ai permessi delegati.</p>
+
+                <h4>D: Come accedo ai report dettagliati?</h4>
+                <p>R: Dalla sezione "Report Scommesse" nel pannello admin, con filtri personalizzati.</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 FastBetNow. Tutti i diritti riservati.</p>
+            <p>Manuale Utente v1.0 | Ultima modifica: 14 Maggio 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Nascondi tutte le sezioni
+            const sections = document.querySelectorAll('.content');
+            sections.forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Mostra la sezione selezionata
+            const selected = document.getElementById(sectionId);
+            if (selected) {
+                selected.classList.remove('hidden');
+            }
+
+            // Scroll verso l'alto
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

@@ -52,12 +52,31 @@ INSERT INTO `CONTO` (`email_intestatario`, `saldo`, `bonus`) VALUES
 --
 
 CREATE TABLE `PARTITA` (
-  `squadra_casa` varchar(15) NOT NULL,
-  `squadra_trasferta` varchar(15) DEFAULT NULL,
+  `id_partita` int(11) NOT NULL AUTO_INCREMENT,
+  `squadra_casa` varchar(50) NOT NULL,
+  `squadra_trasferta` varchar(50) NOT NULL,
   `risultato` varchar(5) DEFAULT NULL,
-  `data` date NOT NULL,
-  `campionato` varchar(15) DEFAULT NULL
+  `data_inizio` datetime NOT NULL,
+  `campionato` varchar(50) NOT NULL,
+  `quota_casa` float NOT NULL DEFAULT 1.0,
+  `quota_pareggio` float NOT NULL DEFAULT 1.0,
+  `quota_trasferta` float NOT NULL DEFAULT 1.0,
+  `stato` varchar(20) NOT NULL DEFAULT 'APERTO' COMMENT 'APERTO, CHIUSO, GIOCATO',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_partita`),
+  UNIQUE KEY `uq_partita` (`squadra_casa`, `squadra_trasferta`, `data_inizio`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `PARTITA`
+--
+
+INSERT INTO `PARTITA` (`squadra_casa`, `squadra_trasferta`, `data_inizio`, `campionato`, `quota_casa`, `quota_pareggio`, `quota_trasferta`, `stato`, `risultato`) VALUES
+('Inter', 'Milan', '2026-02-05 20:45:00', 'Serie A', 2.10, 3.40, 3.50, 'APERTO', NULL),
+('Barcelona', 'Real Madrid', '2026-02-08 21:00:00', 'La Liga', 2.65, 3.30, 2.70, 'APERTO', NULL),
+('Man City', 'Liverpool', '2026-02-09 17:30:00', 'Premier League', 2.20, 3.50, 3.30, 'APERTO', NULL),
+('Bayern', 'Dortmund', '2026-02-09 18:30:00', 'Bundesliga', 1.75, 3.80, 4.50, 'APERTO', NULL);
 
 -- --------------------------------------------------------
 
@@ -66,16 +85,23 @@ CREATE TABLE `PARTITA` (
 --
 
 CREATE TABLE `PUNTATA` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_schedina` int(11) NOT NULL,
+  `id_partita` int(11) NOT NULL,
   `email_utente` varchar(254) NOT NULL,
-  `evento` varchar(100) NOT NULL,
-  `segno` char(1) NOT NULL,
+  `squadra_casa` varchar(50) NOT NULL,
+  `squadra_trasferta` varchar(50) NOT NULL,
+  `segno` char(1) NOT NULL COMMENT '1=casa, X=pareggio, 2=trasferta',
   `quota` float NOT NULL,
   `importo` float NOT NULL,
   `vincita_potenziale` float NOT NULL,
-  `stato` varchar(20) NOT NULL DEFAULT 'APERTO',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `stato` varchar(20) NOT NULL DEFAULT 'APERTO' COMMENT 'APERTO, VINTA, PERSA',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_schedina` (`id_schedina`),
+  KEY `idx_partita` (`id_partita`),
+  KEY `idx_email_utente` (`email_utente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -150,9 +176,18 @@ INSERT INTO `RUOLO_PERMESSO` (`id_ruolo`, `id_permesso`) VALUES
 --
 
 CREATE TABLE `SCHEDINA` (
-  `id` int(11) NOT NULL,
-  `esito` tinyint(1) DEFAULT NULL,
-  `puntata` float NOT NULL
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email_utente` varchar(254) NOT NULL,
+  `importo_totale` float NOT NULL,
+  `quota_totale` float NOT NULL DEFAULT 1.0,
+  `vincita_potenziale` float NOT NULL DEFAULT 0.0,
+  `esito` tinyint(1) DEFAULT NULL COMMENT 'NULL=aperto, 1=vinta, 0=persa',
+  `stato` varchar(20) NOT NULL DEFAULT 'APERTO' COMMENT 'APERTO, CHIUSA, VINTA, PERSA',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_email_utente` (`email_utente`),
+  KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -215,20 +250,6 @@ ALTER TABLE `CONTO`
   ADD PRIMARY KEY (`email_intestatario`);
 
 --
--- Indexes for table `PARTITA`
---
-ALTER TABLE `PARTITA`
-  ADD PRIMARY KEY (`squadra_casa`,`data`);
-
---
--- Indexes for table `PUNTATA`
---
-ALTER TABLE `PUNTATA`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_schedina` (`id_schedina`),
-  ADD KEY `email_utente` (`email_utente`);
-
---
 -- Indexes for table `PERMESSO`
 --
 ALTER TABLE `PERMESSO`
@@ -250,12 +271,6 @@ ALTER TABLE `RUOLO_PERMESSO`
   ADD KEY `id_permesso` (`id_permesso`);
 
 --
--- Indexes for table `SCHEDINA`
---
-ALTER TABLE `SCHEDINA`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Indexes for table `UTENTE`
 --
 ALTER TABLE `UTENTE`
@@ -269,8 +284,10 @@ ALTER TABLE `UTENTE_RUOLO`
   ADD KEY `id_ruolo` (`id_ruolo`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT for table `PARTITA`
 --
+ALTER TABLE `PARTITA`
+  MODIFY `id_partita` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `PERMESSO`
@@ -297,35 +314,38 @@ ALTER TABLE `SCHEDINA`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- Constraints for dumped tables
---
-
---
 -- Constraints for table `CONTO`
 --
 ALTER TABLE `CONTO`
-  ADD CONSTRAINT `CONTO_ibfk_1` FOREIGN KEY (`email_intestatario`) REFERENCES `UTENTE` (`email`);
+  ADD CONSTRAINT `fk_conto_utente` FOREIGN KEY (`email_intestatario`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `SCHEDINA`
+--
+ALTER TABLE `SCHEDINA`
+  ADD CONSTRAINT `fk_schedina_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `PUNTATA`
 --
 ALTER TABLE `PUNTATA`
-  ADD CONSTRAINT `PUNTATA_ibfk_1` FOREIGN KEY (`id_schedina`) REFERENCES `SCHEDINA` (`id`),
-  ADD CONSTRAINT `PUNTATA_ibfk_2` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`);
+  ADD CONSTRAINT `fk_puntata_schedina` FOREIGN KEY (`id_schedina`) REFERENCES `SCHEDINA` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_puntata_partita` FOREIGN KEY (`id_partita`) REFERENCES `PARTITA` (`id_partita`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_puntata_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
 -- Constraints for table `RUOLO_PERMESSO`
 --
 ALTER TABLE `RUOLO_PERMESSO`
-  ADD CONSTRAINT `RUOLO_PERMESSO_ibfk_1` FOREIGN KEY (`id_ruolo`) REFERENCES `RUOLO` (`id`),
-  ADD CONSTRAINT `RUOLO_PERMESSO_ibfk_2` FOREIGN KEY (`id_permesso`) REFERENCES `PERMESSO` (`id`);
+  ADD CONSTRAINT `fk_ruolo_permesso_ruolo` FOREIGN KEY (`id_ruolo`) REFERENCES `RUOLO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ruolo_permesso_permesso` FOREIGN KEY (`id_permesso`) REFERENCES `PERMESSO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `UTENTE_RUOLO`
 --
 ALTER TABLE `UTENTE_RUOLO`
-  ADD CONSTRAINT `UTENTE_RUOLO_ibfk_1` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`),
-  ADD CONSTRAINT `UTENTE_RUOLO_ibfk_2` FOREIGN KEY (`id_ruolo`) REFERENCES `RUOLO` (`id`);
+  ADD CONSTRAINT `fk_utente_ruolo_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_utente_ruolo_ruolo` FOREIGN KEY (`id_ruolo`) REFERENCES `RUOLO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -13,7 +13,6 @@ $userData = getUserDataFromSession();
 $isLoggedIn = ($userData !== null);
 $userEmail = $userData['email'] ?? '';
 $userName = $userData['nome'] ?? '';
-$isAdmin = $userData && $userData['ruolo'] === 'ADMIN';
 $userPermissions = $userData['permessi'] ?? [];
 $canPuntaSchedina = $isLoggedIn && in_array('PUNTA_SCHEDINA', $userPermissions, true);
 
@@ -29,7 +28,8 @@ if ($isLoggedIn) {
 $betStatus = $_GET['bet_status'] ?? '';
 $betMessage = trim($_GET['bet_message'] ?? '');
 
-$partite = getPartiteCatalog();
+global $pdo;
+$partite = getPartiteCatalog($pdo);
 ?>
 
 <!DOCTYPE html>
@@ -37,662 +37,636 @@ $partite = getPartiteCatalog();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastBetNow - Partite</title>
+    <title>FastBetNow - Scommesse Sportive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: #1a1a2e;
+            color: #ccc;
             font-family: 'Segoe UI', sans-serif;
-            padding-top: 80px;
+            min-height: 100vh;
         }
-        
+
         .navbar-custom {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            background: #16213e;
             padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            border-bottom: 3px solid #00d4ff;
         }
-        
+
         .navbar-brand {
-            color: #667eea;
+            color: #00d4ff !important;
             font-weight: 700;
             font-size: 1.5rem;
-        }
-        
-        .profile-btn, .dashboard-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 8px 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-decoration: none;
-        }
-        
-        .profile-btn:hover, .dashboard-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        
-        .profile-img {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #667eea;
-            font-size: 18px;
-        }
-        
-        .btn-login-nav {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-            border-radius: 50px;
-            padding: 8px 25px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-login-nav:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        .logout-btn {
-            background: transparent;
-            color: #dc3545;
-            border: 2px solid #dc3545;
-            border-radius: 50px;
-            padding: 8px 20px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-        
-        .logout-btn:hover {
-            background: #dc3545;
-            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        .match-card {
-            background: white;
-            border-radius: 15px;
+        .container-main {
+            display: flex;
+            gap: 20px;
             padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            transition: transform 0.3s, box-shadow 0.3s;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .match-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        .matches-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .schedina-section {
+            width: 380px;
+        }
+
+        @media (max-width: 768px) {
+            .container-main {
+                flex-direction: column;
+            }
+            .schedina-section {
+                width: 100%;
+            }
+        }
+
+        .match-item {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .match-item:hover {
+            background: #1a4d7f;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
         }
 
         .match-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
         }
 
-        .championship-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+        .championship {
+            font-size: 0.8rem;
+            color: #00d4ff;
             font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .match-date {
-            color: #666;
+        .match-time {
             font-size: 0.9rem;
+            color: #888;
         }
 
-        .teams-container {
+        .teams {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .team {
-            text-align: center;
-            flex: 1;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 10px;
         }
 
         .team-name {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 5px;
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.95rem;
         }
 
-        .vs-divider {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #667eea;
-            padding: 0 20px;
+        .vs {
+            color: #888;
+            font-size: 0.8rem;
+            min-width: 30px;
+            text-align: center;
         }
 
         .odds-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            display: flex;
+            gap: 8px;
         }
 
         .odd-btn {
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
+            flex: 1;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            padding: 10px 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 0.95rem;
         }
 
         .odd-btn:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: #667eea;
+            background: #00d4ff;
+            color: #1a1a2e;
             transform: scale(1.05);
         }
 
-        .odd-btn:hover .odd-label,
-        .odd-btn:hover .odd-value {
-            color: white;
+        .odd-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .odd-label {
-            font-size: 0.85rem;
-            color: #666;
-            font-weight: 600;
-            margin-bottom: 5px;
+            font-size: 0.75rem;
+            opacity: 0.8;
+            display: block;
+            margin-bottom: 3px;
         }
 
         .odd-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #667eea;
+            font-size: 1.2rem;
+            display: block;
         }
 
-        .page-title {
-            color: white;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .page-title h1 {
-            font-weight: 700;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .no-matches {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            color: #666;
-        }
-
-        .bet-panel {
-            background: rgba(255, 255, 255, 0.96);
-            border-radius: 15px;
+        /* SCHEDINA LATERALE */
+        .schedina-sticky {
+            position: sticky;
+            top: 20px;
+            background: #0f3460;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
             padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
 
-        .bet-panel h4 {
-            color: #333;
-            margin-bottom: 8px;
+        .schedina-title {
+            color: #00d4ff;
             font-weight: 700;
-        }
-
-        .saldo-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            background: #e8f3ff;
-            color: #1453a6;
-            font-weight: 600;
+            font-size: 1.2rem;
             margin-bottom: 15px;
+            text-transform: uppercase;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00d4ff;
         }
 
-        .bet-actions {
-            display: grid;
-            grid-template-columns: 2fr 1fr auto 1fr;
-            gap: 10px;
-            align-items: end;
-        }
-
-        .add-selection {
-            background: linear-gradient(135deg, #1453a6 0%, #2a76d2 100%);
-            border: none;
-            color: white;
-            font-weight: 700;
-            border-radius: 10px;
-            padding: 10px 14px;
-            white-space: nowrap;
-        }
-
-        .bet-submit {
-            background: linear-gradient(135deg, #1f8f4d 0%, #34b56a 100%);
-            border: none;
-            color: white;
-            font-weight: 700;
-            border-radius: 10px;
-            padding: 10px 18px;
-            white-space: nowrap;
-        }
-
-        .bet-preview {
-            margin-top: 10px;
-            color: #444;
-            font-weight: 600;
-        }
-
-        .selection-list {
-            margin-top: 12px;
-            background: #f8fafc;
-            border: 1px solid #e4e9f1;
-            border-radius: 10px;
+        .schedina-selection {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            border-radius: 6px;
             padding: 10px;
-        }
-
-        .selection-item {
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
-            border: 1px solid #e8edf6;
-            border-radius: 8px;
-            padding: 8px 10px;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2b3a4d;
+            font-size: 0.9rem;
         }
 
-        .selection-item:last-child {
+        .selection-event {
+            flex: 1;
+            color: #ddd;
+        }
+
+        .selection-sign-quota {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .remove-selection {
+            background: #dc3545;
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .remove-selection:hover {
+            background: #ff0000;
+            transform: scale(1.1);
+        }
+
+        .empty-schedina {
+            text-align: center;
+            color: #666;
+            padding: 30px 10px;
+        }
+
+        .empty-schedina i {
+            font-size: 3rem;
+            color: #444;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .schedina-stats {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #ddd;
+        }
+
+        .stat-row:last-child {
             margin-bottom: 0;
         }
 
-        .selection-remove {
-            border: none;
-            background: #ffe1e1;
-            color: #9f1d1d;
-            border-radius: 999px;
-            padding: 4px 10px;
-            font-size: 0.8rem;
-            font-weight: 700;
+        .stat-label {
+            color: #888;
         }
 
-        .selection-empty {
-            margin: 0;
-            color: #68778a;
+        .stat-value {
+            color: #00d4ff;
             font-weight: 600;
         }
 
-        @media (max-width: 768px) {
-            .bet-actions {
-                grid-template-columns: 1fr;
-            }
+        .bet-input-group {
+            margin: 15px 0;
+        }
 
-            .add-selection {
-                width: 100%;
-            }
+        .bet-input-group label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            display: block;
+        }
 
-            .bet-submit {
-                width: 100%;
-            }
+        .input-importo {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .input-importo:focus {
+            outline: none;
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .bet-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .bet-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .bet-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .user-info {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .saldo-display {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .alert-message {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+            grid-column: 1 / -1;
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+
+        .alert-error {
+            background: rgba(220, 53, 69, 0.1);
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .alert-info {
+            background: rgba(0, 212, 255, 0.1);
+            border-left-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        .no-matches {
+            text-align: center;
+            padding: 40px 20px;
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            color: #888;
+        }
+
+        .no-matches i {
+            font-size: 3rem;
+            color: #444;
+            display: block;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
-        <div class="container">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-custom">
+        <div class="container-fluid px-4">
             <a class="navbar-brand" href="index.php">
                 <i class="bi bi-lightning-fill"></i> FastBetNow
             </a>
-            
-            <div class="ms-auto d-flex align-items-center">
+            <div class="ms-auto d-flex gap-3 align-items-center">
                 <?php if ($isLoggedIn): ?>
-                    <?php if ($isAdmin): ?>
-                        <a href="admin/dashboard.php" class="dashboard-btn">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    <?php else: ?>
-                        <a href="profilo.php" class="profile-btn">
-                            <div class="profile-img">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
-                            <span><?= htmlspecialchars($userName) ?></span>
-                        </a>
-                    <?php endif; ?>
-                    <a href="../logout.php" class="logout-btn">
-                        <i class="bi bi-box-arrow-right"></i> Esci
-                    </a>
+                    <span class="user-info">
+                        <i class="bi bi-person-circle"></i> <?= htmlspecialchars($userName) ?>
+                    </span>
+                    <span class="saldo-display">
+                        <i class="bi bi-wallet2"></i> €<?= number_format($userSaldo, 2) ?>
+                    </span>
+                    <a href="../logout.php" class="login-btn" style="background: #dc3545; color: white;">Logout</a>
                 <?php else: ?>
-                    <a href="../login.php" class="btn btn-login-nav">
-                        <i class="bi bi-box-arrow-in-right"></i> Accedi
-                    </a>
+                    <a href="../login.php" class="login-btn">Login</a>
                 <?php endif; ?>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="page-title">
-            <h1><i class="bi bi-trophy-fill"></i> Partite Disponibili</h1>
-            <p>Scegli la tua partita e piazza la tua scommessa</p>
+    <!-- MAIN CONTENT -->
+    <div class="container-main">
+        <?php if ($betStatus === 'success'): ?>
+            <div class="alert-message alert-success">
+                <i class="bi bi-check-circle"></i> <?= htmlspecialchars($betMessage) ?>
+            </div>
+        <?php elseif ($betStatus === 'error'): ?>
+            <div class="alert-message alert-error">
+                <i class="bi bi-exclamation-circle"></i> <?= htmlspecialchars($betMessage) ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- SEZIONE PARTITE -->
+        <div class="matches-section">
+            <?php if (empty($partite)): ?>
+                <div class="no-matches">
+                    <i class="bi bi-calendar-x"></i>
+                    <h3>Nessuna partita disponibile</h3>
+                    <p>Torna più tardi per le prossime scommesse!</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($partite as $partita): ?>
+                    <div class="match-item">
+                        <div class="match-header">
+                            <span class="championship">
+                                <i class="bi bi-trophy"></i> <?= htmlspecialchars($partita['campionato']) ?>
+                            </span>
+                            <span class="match-time">
+                                <i class="bi bi-clock"></i> <?= date('d/m H:i', strtotime($partita['data_inizio'])) ?>
+                            </span>
+                        </div>
+
+                        <div class="teams">
+                            <span class="team-name"><?= htmlspecialchars($partita['squadra_casa']) ?></span>
+                            <span class="vs">vs</span>
+                            <span class="team-name"><?= htmlspecialchars($partita['squadra_trasferta']) ?></span>
+                        </div>
+
+                        <div class="odds-container">
+                            <button class="odd-btn" onclick="addSelection(<?= $partita['id_partita'] ?>, '1', '<?= htmlspecialchars($partita['squadra_casa'] . ' - ' . $partita['squadra_trasferta']) ?>', <?= $partita['quota_casa'] ?>)" <?= !$canPuntaSchedina ? 'disabled' : '' ?>>
+                                <span class="odd-label">1</span>
+                                <span class="odd-value"><?= number_format($partita['quota_casa'], 2) ?></span>
+                            </button>
+                            <button class="odd-btn" onclick="addSelection(<?= $partita['id_partita'] ?>, 'X', '<?= htmlspecialchars($partita['squadra_casa'] . ' - ' . $partita['squadra_trasferta']) ?>', <?= $partita['quota_pareggio'] ?>)" <?= !$canPuntaSchedina ? 'disabled' : '' ?>>
+                                <span class="odd-label">X</span>
+                                <span class="odd-value"><?= number_format($partita['quota_pareggio'], 2) ?></span>
+                            </button>
+                            <button class="odd-btn" onclick="addSelection(<?= $partita['id_partita'] ?>, '2', '<?= htmlspecialchars($partita['squadra_casa'] . ' - ' . $partita['squadra_trasferta']) ?>', <?= $partita['quota_trasferta'] ?>)" <?= !$canPuntaSchedina ? 'disabled' : '' ?>>
+                                <span class="odd-label">2</span>
+                                <span class="odd-value"><?= number_format($partita['quota_trasferta'], 2) ?></span>
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
 
-        <?php if ($betMessage !== ''): ?>
-            <div class="alert <?= $betStatus === 'success' ? 'alert-success' : 'alert-danger' ?>">
-                <?= htmlspecialchars($betMessage) ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($isLoggedIn && $canPuntaSchedina): ?>
-            <div class="bet-panel">
-                <h4><i class="bi bi-cash-coin"></i> Crea la tua schedina multipla</h4>
-                <div class="saldo-badge">
-                    Saldo disponibile: <?= number_format((float) $userSaldo, 2) ?> EUR
+        <!-- SEZIONE SCHEDINA -->
+        <div class="schedina-section">
+            <form id="schedinForm" method="POST" action="punta_schedina.php" class="schedina-sticky">
+                <div class="schedina-title">
+                    <i class="bi bi-card-list"></i> La mia Schedina
                 </div>
 
-                <form method="POST" action="punta_schedina.php">
-                    <div class="bet-actions">
-                        <div>
-                            <label for="matchSelect" class="form-label">Partita</label>
-                            <select class="form-select" name="match_index" id="matchSelect" required>
-                                <?php foreach ($partite as $index => $partita): ?>
-                                    <option
-                                        value="<?= $index ?>"
-                                        data-q1="<?= number_format((float) $partita['quota_casa'], 2, '.', '') ?>"
-                                        data-qx="<?= number_format((float) $partita['quota_pareggio'], 2, '.', '') ?>"
-                                        data-q2="<?= number_format((float) $partita['quota_trasferta'], 2, '.', '') ?>"
-                                    >
-                                        <?= htmlspecialchars($partita['squadra_casa'] . ' - ' . $partita['squadra_trasferta']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="segnoSelect" class="form-label">Segno</label>
-                            <select class="form-select" name="segno" id="segnoSelect" required>
-                                <option value="1">1</option>
-                                <option value="X">X</option>
-                                <option value="2">2</option>
-                            </select>
-                        </div>
-
-                        <button type="button" class="add-selection" id="addSelectionBtn">
-                            <i class="bi bi-plus-circle"></i> Aggiungi evento
-                        </button>
-
-                        <div>
-                            <label for="importoInput" class="form-label">Importo</label>
-                            <input
-                                id="importoInput"
-                                type="number"
-                                min="1"
-                                step="0.01"
-                                class="form-control"
-                                name="importo"
-                                value="5.00"
-                                required
-                            >
-                        </div>
-                    </div>
-
-                    <div class="selection-list" id="selectionList">
-                        <p class="selection-empty">Nessun evento aggiunto. Seleziona partita + segno e premi "Aggiungi evento".</p>
-                    </div>
-
-                    <input type="hidden" name="selezioni_json" id="selezioniJsonInput" value="[]">
-
-                    <div class="mt-3">
-                        <button type="submit" class="bet-submit" id="submitSchedinaBtn">
-                            <i class="bi bi-lightning-charge-fill"></i> Punta schedina
-                        </button>
-                    </div>
-                </form>
-
-                <div class="bet-preview">
-                    Eventi: <span id="selectedEvents">0</span> | Quota totale: <span id="selectedQuota">-</span> | Vincita potenziale: <span id="potentialWin">-</span>
-                </div>
-            </div>
-        <?php elseif ($isLoggedIn): ?>
-            <div class="alert alert-warning">
-                Non hai il permesso PUNTA_SCHEDINA per piazzare nuove schedine.
-            </div>
-        <?php else: ?>
-            <div class="alert alert-info">
-                Accedi per puntare una schedina e salvare le transazioni sul tuo conto.
-            </div>
-        <?php endif; ?>
-
-        <?php if (empty($partite)): ?>
-            <div class="no-matches">
-                <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
-                <h3 class="mt-3">Nessuna partita disponibile</h3>
-                <p>Torna più tardi per vedere le prossime partite!</p>
-            </div>
-        <?php else: ?>
-            <?php foreach ($partite as $partita): ?>
-                <div class="match-card">
-                    <div class="match-header">
-                        <span class="championship-badge">
-                            <i class="bi bi-trophy"></i> <?= htmlspecialchars($partita['campionato']) ?>
-                        </span>
-                        <span class="match-date">
-                            <i class="bi bi-calendar-event"></i> 
-                            <?= date('d/m/Y H:i', strtotime($partita['data'])) ?>
-                        </span>
-                    </div>
-
-                    <div class="teams-container">
-                        <div class="team">
-                            <div class="team-name"><?= htmlspecialchars($partita['squadra_casa']) ?></div>
-                        </div>
-                        <div class="vs-divider">VS</div>
-                        <div class="team">
-                            <div class="team-name"><?= htmlspecialchars($partita['squadra_trasferta']) ?></div>
-                        </div>
-                    </div>
-
-                    <div class="odds-container">
-                        <div class="odd-btn">
-                            <div class="odd-label">1 (Casa)</div>
-                            <div class="odd-value"><?= number_format($partita['quota_casa'], 2) ?></div>
-                        </div>
-                        <div class="odd-btn">
-                            <div class="odd-label">X (Pareggio)</div>
-                            <div class="odd-value"><?= number_format($partita['quota_pareggio'], 2) ?></div>
-                        </div>
-                        <div class="odd-btn">
-                            <div class="odd-label">2 (Trasferta)</div>
-                            <div class="odd-value"><?= number_format($partita['quota_trasferta'], 2) ?></div>
-                        </div>
+                <div id="schedinaItems">
+                    <div class="empty-schedina">
+                        <i class="bi bi-bookmark"></i>
+                        <p>Nessuna scommessa</p>
+                        <small>Seleziona una quota per iniziare</small>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+
+                <div class="schedina-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Eventi:</span>
+                        <span class="stat-value" id="eventCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Quota Totale:</span>
+                        <span class="stat-value" id="totalQuota">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Vincita Potenziale:</span>
+                        <span class="stat-value" id="potentialWin">-</span>
+                    </div>
+                </div>
+
+                <?php if ($isLoggedIn): ?>
+                    <div class="bet-input-group">
+                        <label for="importo">Importo da puntare (€)</label>
+                        <input type="number" id="importo" name="importo" class="input-importo" min="1" step="0.01" value="5.00" placeholder="0.00">
+                    </div>
+                    <button type="submit" class="bet-submit" id="submitBtn" disabled>
+                        <i class="bi bi-lightning-charge"></i> Piazza Scommessa
+                    </button>
+                <?php else: ?>
+                    <div class="alert-message alert-info">
+                        <a href="../login.php" style="color: inherit; text-decoration: underline;">Accedi</a> per piazzare scommesse
+                    </div>
+                <?php endif; ?>
+
+                <input type="hidden" name="selezioni_json" id="selezioniJsonInput" value="[]">
+            </form>
+        </div>
     </div>
 
     <script>
-        (function () {
-            const matchSelect = document.getElementById('matchSelect');
-            const segnoSelect = document.getElementById('segnoSelect');
-            const addSelectionBtn = document.getElementById('addSelectionBtn');
-            const importoInput = document.getElementById('importoInput');
-            const selectionList = document.getElementById('selectionList');
-            const selezioniJsonInput = document.getElementById('selezioniJsonInput');
-            const submitSchedinaBtn = document.getElementById('submitSchedinaBtn');
-            const selectedEvents = document.getElementById('selectedEvents');
-            const selectedQuota = document.getElementById('selectedQuota');
-            const potentialWin = document.getElementById('potentialWin');
-            const form = document.querySelector('form[action="punta_schedina.php"]');
+        const selections = [];
+        const schedinaItems = document.getElementById('schedinaItems');
+        const eventCount = document.getElementById('eventCount');
+        const totalQuota = document.getElementById('totalQuota');
+        const potentialWin = document.getElementById('potentialWin');
+        const importoInput = document.getElementById('importo');
+        const submitBtn = document.getElementById('submitBtn');
+        const selezioniJsonInput = document.getElementById('selezioniJsonInput');
 
-            const selezioni = [];
-
-            if (!matchSelect || !segnoSelect || !addSelectionBtn || !importoInput || !selectionList || !selezioniJsonInput || !submitSchedinaBtn || !selectedEvents || !selectedQuota || !potentialWin || !form) {
-                return;
+        function addSelection(idPartita, segno, evento, quota) {
+            // Controlla se la partita è già selezionata
+            const existing = selections.findIndex(s => s.id_partita === idPartita);
+            
+            if (existing >= 0) {
+                // Sostituisci
+                selections[existing] = { id_partita: idPartita, segno, evento, quota: parseFloat(quota) };
+            } else {
+                // Aggiungi
+                selections.push({ id_partita: idPartita, segno, evento, quota: parseFloat(quota) });
             }
 
-            function getCurrentSelection() {
-                const option = matchSelect.options[matchSelect.selectedIndex];
-                if (!option) {
-                    return null;
+            updateSchedina();
+        }
+
+        function removeSelection(index) {
+            selections.splice(index, 1);
+            updateSchedina();
+        }
+
+        function updateSchedina() {
+            if (selections.length === 0) {
+                schedinaItems.innerHTML = `
+                    <div class="empty-schedina">
+                        <i class="bi bi-bookmark"></i>
+                        <p>Nessuna scommessa</p>
+                        <small>Seleziona una quota per iniziare</small>
+                    </div>
+                `;
+                eventCount.textContent = '0';
+                totalQuota.textContent = '-';
+                potentialWin.textContent = '-';
+                submitBtn.disabled = true;
+            } else {
+                // Mostra le selezioni
+                let html = '';
+                for (let i = 0; i < selections.length; i++) {
+                    const s = selections[i];
+                    html += `
+                        <div class="schedina-selection">
+                            <div class="selection-event">${s.evento}</div>
+                            <div class="selection-sign-quota">${s.segno} @${s.quota.toFixed(2)}</div>
+                            <button type="button" class="remove-selection" onclick="removeSelection(${i})">×</button>
+                        </div>
+                    `;
                 }
+                schedinaItems.innerHTML = html;
 
-                const segno = segnoSelect.value;
-                let quota = 0;
-                if (segno === '1') {
-                    quota = parseFloat(option.dataset.q1 || '0');
-                } else if (segno === 'X') {
-                    quota = parseFloat(option.dataset.qx || '0');
-                } else {
-                    quota = parseFloat(option.dataset.q2 || '0');
-                }
+                // Calcola statistiche
+                const quota = selections.reduce((acc, s) => acc * s.quota, 1);
+                const importo = parseFloat(importoInput.value) || 0;
+                const vincita = importo * quota;
 
-                return {
-                    match_index: parseInt(option.value, 10),
-                    segno,
-                    quota,
-                    evento: option.textContent.trim(),
-                };
-            }
+                eventCount.textContent = selections.length;
+                totalQuota.textContent = quota.toFixed(2);
+                potentialWin.textContent = importo > 0 ? '€' + vincita.toFixed(2) : '-';
 
-            function refreshPreview() {
-                let quotaTotale = 1;
-                for (const selezione of selezioni) {
-                    quotaTotale *= selezione.quota;
-                }
-
-                const importo = parseFloat(importoInput.value || '0');
-                const quotaFinale = selezioni.length > 0 ? quotaTotale : 0;
-                const vincita = quotaFinale * importo;
-
-                selectedEvents.textContent = String(selezioni.length);
-                selectedQuota.textContent = quotaFinale > 0 ? quotaFinale.toFixed(2) : '-';
-                potentialWin.textContent = quotaFinale > 0 && importo > 0 ? vincita.toFixed(2) + ' EUR' : '-';
-            }
-
-            function renderSelections() {
-                if (selezioni.length === 0) {
-                    selectionList.innerHTML = '<p class="selection-empty">Nessun evento aggiunto. Seleziona partita + segno e premi "Aggiungi evento".</p>';
-                } else {
-                    selectionList.innerHTML = selezioni.map((selezione, idx) => {
-                        const quotaTxt = Number(selezione.quota).toFixed(2);
-                        return `
-                            <div class="selection-item">
-                                <span>${idx + 1}. ${selezione.evento} | ${selezione.segno} @ ${quotaTxt}</span>
-                                <button type="button" class="selection-remove" data-remove-index="${idx}">Rimuovi</button>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-                selezioniJsonInput.value = JSON.stringify(selezioni.map((selezione) => ({
-                    match_index: selezione.match_index,
-                    segno: selezione.segno,
+                // Aggiorna il JSON nascosto
+                selezioniJsonInput.value = JSON.stringify(selections.map(s => ({
+                    id_partita: s.id_partita,
+                    segno: s.segno
                 })));
-                submitSchedinaBtn.disabled = selezioni.length === 0;
-                refreshPreview();
+
+                submitBtn.disabled = false;
             }
+        }
 
-            addSelectionBtn.addEventListener('click', function () {
-                const selezione = getCurrentSelection();
-                if (!selezione || !Number.isFinite(selezione.match_index) || selezione.quota <= 0) {
-                    alert('Selezione non valida');
-                    return;
-                }
+        if (importoInput) {
+            importoInput.addEventListener('input', updateSchedina);
+        }
 
-                const existingIndex = selezioni.findIndex((item) => item.match_index === selezione.match_index);
-                if (existingIndex >= 0) {
-                    selezioni[existingIndex] = selezione;
-                } else {
-                    selezioni.push(selezione);
-                }
+        // Inizializza
+        updateSchedina();
 
-                renderSelections();
-            });
+        // Assicura che il campo nascosto sia sempre sincronizzato prima del submit
+        const schedinForm = document.getElementById('schedinForm');
+        if (schedinForm) {
+            schedinForm.addEventListener('submit', function (e) {
+                // aggiorna il campo nascosto
+                selezioniJsonInput.value = JSON.stringify(selections.map(s => ({ id_partita: s.id_partita, segno: s.segno })));
 
-            selectionList.addEventListener('click', function (event) {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) {
-                    return;
-                }
-
-                const indexRaw = target.getAttribute('data-remove-index');
-                if (indexRaw === null) {
-                    return;
-                }
-
-                const index = parseInt(indexRaw, 10);
-                if (!Number.isFinite(index) || index < 0 || index >= selezioni.length) {
-                    return;
-                }
-
-                selezioni.splice(index, 1);
-                renderSelections();
-            });
-
-            form.addEventListener('submit', function (event) {
-                if (selezioni.length === 0) {
-                    event.preventDefault();
+                if (selections.length === 0) {
+                    e.preventDefault();
                     alert('Aggiungi almeno un evento alla schedina');
+                    return false;
                 }
+
+                // opzionale: valida importo
+                const importo = parseFloat(importoInput ? importoInput.value : '0') || 0;
+                if (importo <= 0) {
+                    e.preventDefault();
+                    alert('Inserisci un importo valido');
+                    return false;
+                }
+
+                return true;
             });
-
-            importoInput.addEventListener('input', refreshPreview);
-
-            matchSelect.addEventListener('change', function () {
-                const current = getCurrentSelection();
-                if (!current) {
-                    return;
-                }
-
-                const existingIndex = selezioni.findIndex((item) => item.match_index === current.match_index);
-                if (existingIndex >= 0) {
-                    current.segno = segnoSelect.value;
-                    selezioni[existingIndex] = current;
-                    renderSelections();
-                }
-            });
-
-            segnoSelect.addEventListener('change', function () {
-                const current = getCurrentSelection();
-                if (!current) {
-                    return;
-                }
-
-                const existingIndex = selezioni.findIndex((item) => item.match_index === current.match_index);
-                if (existingIndex >= 0) {
-                    selezioni[existingIndex] = current;
-                    renderSelections();
-                }
-            });
-
-            renderSelections();
-        })();
+        }
     </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
