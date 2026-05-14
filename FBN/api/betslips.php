@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../database.php';
 require_once __DIR__ . '/../auth_helper.php';
+require_once __DIR__ . '/../tenant_helper.php';
 require_once __DIR__ . '/../services/BetService.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -22,7 +23,12 @@ if (!hasPermissionJWT($pdo, $email, 'PUNTA_SCHEDINA')) {
     exit;
 }
 
+// Verificare accesso al tenant
+requireTenantAccess();
+
 global $pdo;
+
+$tenantId = getTenantIdFromRequest();
 
 if ($method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -43,7 +49,7 @@ if ($method === 'POST') {
     $selezioni = $data['selezioni'];
 
     try {
-        $betService = new BetService($pdo);
+        $betService = new BetService($pdo, $tenantId);
         $result = $betService->placeSchedinaMultiplaBet(
             $email,
             $selezioni,
@@ -84,17 +90,17 @@ if ($method === 'POST') {
 
     $stmt = $pdo->prepare("
         SELECT 
-            id_schedina, 
-            importo, 
+            id, 
+            importo_totale, 
             quota_totale, 
             vincita_potenziale, 
             stato, 
             created_at, 
             updated_at
         FROM SCHEDINA
-        WHERE id_schedina = ? AND email_utente = ?
+        WHERE id = ? AND email_utente = ? AND tenant_id = ?
     ");
-    $stmt->execute([$id, $email]);
+    $stmt->execute([$id, $email, $tenantId]);
     $schedina = $stmt->fetch();
 
     if (!$schedina) {
@@ -115,15 +121,15 @@ if ($method === 'POST') {
             vincita_potenziale,
             stato
         FROM PUNTATA
-        WHERE id_schedina = ?
+        WHERE id_schedina = ? AND tenant_id = ?
     ");
-    $puntateStmt->execute([$id]);
+    $puntateStmt->execute([$id, $tenantId]);
     $puntate = $puntateStmt->fetchAll();
 
     http_response_code(200);
     echo json_encode([
-        'id_schedina' => (int) $schedina['id_schedina'],
-        'importo' => (float) $schedina['importo'],
+        'id_schedina' => (int) $schedina['id'],
+        'importo' => (float) $schedina['importo_totale'],
         'quota_totale' => (float) $schedina['quota_totale'],
         'vincita_potenziale' => (float) $schedina['vincita_potenziale'],
         'stato' => $schedina['stato'],

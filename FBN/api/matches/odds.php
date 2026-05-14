@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../database.php';
 require_once __DIR__ . '/../auth_helper.php';
+require_once __DIR__ . '/../tenant_helper.php';
 
 $token = getBearerToken();
 
@@ -20,6 +21,9 @@ if (!hasPermissionJWT($pdo, $email, 'VISUALIZZA_PARTITE')) {
     exit;
 }
 
+// Verificare accesso al tenant
+requireTenantAccess();
+
 global $pdo;
 
 $id = $_GET['id'] ?? null;
@@ -30,9 +34,12 @@ if (!$id) {
     exit;
 }
 
+$tenantId = getTenantIdFromRequest();
+
 $stmt = $pdo->prepare("
     SELECT 
         id_partita,
+        tenant_id,
         squadra_casa,
         squadra_trasferta,
         data_inizio,
@@ -44,9 +51,9 @@ $stmt = $pdo->prepare("
         created_at,
         updated_at
     FROM PARTITA
-    WHERE id_partita = ?
+    WHERE id_partita = ? AND tenant_id = ?
 ");
-$stmt->execute([$id]);
+$stmt->execute([$id, $tenantId]);
 $partita = $stmt->fetch();
 
 if (!$partita) {

@@ -24,11 +24,36 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `CONTO`
+-- Table structure for table `TENANT`
 --
+
+CREATE TABLE `TENANT` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(100) NOT NULL,
+  `slug` varchar(50) NOT NULL UNIQUE,
+  `descrizione` text,
+  `attivo` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `TENANT`
+--
+
+INSERT INTO `TENANT` (`id`, `nome`, `slug`, `descrizione`, `attivo`) VALUES
+(1, 'FastBetNow Principale', 'fbn-principale', 'Tenant principale', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `CONTO` --
 
 CREATE TABLE `CONTO` (
   `email_intestatario` varchar(254) NOT NULL,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `saldo` float NOT NULL,
   `bonus` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -53,6 +78,7 @@ INSERT INTO `CONTO` (`email_intestatario`, `saldo`, `bonus`) VALUES
 
 CREATE TABLE `PARTITA` (
   `id_partita` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `squadra_casa` varchar(50) NOT NULL,
   `squadra_trasferta` varchar(50) NOT NULL,
   `risultato` varchar(5) DEFAULT NULL,
@@ -65,7 +91,8 @@ CREATE TABLE `PARTITA` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id_partita`),
-  UNIQUE KEY `uq_partita` (`squadra_casa`, `squadra_trasferta`, `data_inizio`)
+  UNIQUE KEY `uq_partita` (`tenant_id`, `squadra_casa`, `squadra_trasferta`, `data_inizio`),
+  KEY `idx_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -86,6 +113,7 @@ INSERT INTO `PARTITA` (`squadra_casa`, `squadra_trasferta`, `data_inizio`, `camp
 
 CREATE TABLE `PUNTATA` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `id_schedina` int(11) NOT NULL,
   `id_partita` int(11) NOT NULL,
   `email_utente` varchar(254) NOT NULL,
@@ -101,7 +129,8 @@ CREATE TABLE `PUNTATA` (
   PRIMARY KEY (`id`),
   KEY `idx_schedina` (`id_schedina`),
   KEY `idx_partita` (`id_partita`),
-  KEY `idx_email_utente` (`email_utente`)
+  KEY `idx_email_utente` (`email_utente`),
+  KEY `idx_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -177,6 +206,7 @@ INSERT INTO `RUOLO_PERMESSO` (`id_ruolo`, `id_permesso`) VALUES
 
 CREATE TABLE `SCHEDINA` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `email_utente` varchar(254) NOT NULL,
   `importo_totale` float NOT NULL,
   `quota_totale` float NOT NULL DEFAULT 1.0,
@@ -187,7 +217,8 @@ CREATE TABLE `SCHEDINA` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_email_utente` (`email_utente`),
-  KEY `idx_created_at` (`created_at`)
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -198,10 +229,13 @@ CREATE TABLE `SCHEDINA` (
 
 CREATE TABLE `UTENTE` (
   `email` varchar(254) NOT NULL,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `nome` varchar(20) NOT NULL,
   `cognome` varchar(20) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `refresh_token` varchar(255) DEFAULT NULL
+  `refresh_token` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`email`, `tenant_id`),
+  KEY `idx_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -244,10 +278,18 @@ INSERT INTO `UTENTE_RUOLO` (`email_utente`, `id_ruolo`) VALUES
 --
 
 --
+-- Indexes for table `TENANT`
+--
+ALTER TABLE `TENANT`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `slug` (`slug`);
+
+--
 -- Indexes for table `CONTO`
 --
 ALTER TABLE `CONTO`
-  ADD PRIMARY KEY (`email_intestatario`);
+  ADD PRIMARY KEY (`email_intestatario`, `tenant_id`),
+  ADD KEY `idx_tenant` (`tenant_id`);
 
 --
 -- Indexes for table `PERMESSO`
@@ -274,7 +316,8 @@ ALTER TABLE `RUOLO_PERMESSO`
 -- Indexes for table `UTENTE`
 --
 ALTER TABLE `UTENTE`
-  ADD PRIMARY KEY (`email`);
+  ADD PRIMARY KEY (`email`, `tenant_id`),
+  ADD KEY `idx_tenant` (`tenant_id`);
 
 --
 -- Indexes for table `UTENTE_RUOLO`
@@ -282,6 +325,12 @@ ALTER TABLE `UTENTE`
 ALTER TABLE `UTENTE_RUOLO`
   ADD PRIMARY KEY (`email_utente`,`id_ruolo`),
   ADD KEY `id_ruolo` (`id_ruolo`);
+
+--
+-- AUTO_INCREMENT for table `TENANT`
+--
+ALTER TABLE `TENANT`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `PARTITA`
@@ -317,13 +366,15 @@ ALTER TABLE `SCHEDINA`
 -- Constraints for table `CONTO`
 --
 ALTER TABLE `CONTO`
-  ADD CONSTRAINT `fk_conto_utente` FOREIGN KEY (`email_intestatario`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_conto_utente` FOREIGN KEY (`email_intestatario`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_conto_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `TENANT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `SCHEDINA`
 --
 ALTER TABLE `SCHEDINA`
-  ADD CONSTRAINT `fk_schedina_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_schedina_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_schedina_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `TENANT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `PUNTATA`
@@ -331,7 +382,8 @@ ALTER TABLE `SCHEDINA`
 ALTER TABLE `PUNTATA`
   ADD CONSTRAINT `fk_puntata_schedina` FOREIGN KEY (`id_schedina`) REFERENCES `SCHEDINA` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_puntata_partita` FOREIGN KEY (`id_partita`) REFERENCES `PARTITA` (`id_partita`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_puntata_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_puntata_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_puntata_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `TENANT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `RUOLO_PERMESSO`
@@ -346,7 +398,18 @@ ALTER TABLE `RUOLO_PERMESSO`
 ALTER TABLE `UTENTE_RUOLO`
   ADD CONSTRAINT `fk_utente_ruolo_utente` FOREIGN KEY (`email_utente`) REFERENCES `UTENTE` (`email`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_utente_ruolo_ruolo` FOREIGN KEY (`id_ruolo`) REFERENCES `RUOLO` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-COMMIT;
+
+--
+-- Constraints for table `UTENTE`
+--
+ALTER TABLE `UTENTE`
+  ADD CONSTRAINT `fk_utente_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `TENANT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `PARTITA`
+--
+ALTER TABLE `PARTITA`
+  ADD CONSTRAINT `fk_partita_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `TENANT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

@@ -20,7 +20,7 @@ $password = $data->password;
 
 global $pdo;
 
-$stmt = $pdo->prepare("SELECT email, password FROM UTENTE WHERE email = ?");
+$stmt = $pdo->prepare("SELECT email, password, tenant_id FROM UTENTE WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch();
 
@@ -58,7 +58,8 @@ if ($user && password_verify($password, $user['password'])) {
         'sub'  => $user['email'],
         'role' => $ruolo,
         'permissions' => $permessi,
-        'perm_count'  => count($permessi)
+        'perm_count'  => count($permessi),
+        'tenant_id' => (int)($user['tenant_id'] ?? 1)
     ];
 
     $jwt = JWT::encode($payload, JWT_SECRET, 'HS256');

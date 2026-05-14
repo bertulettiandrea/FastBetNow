@@ -162,9 +162,11 @@ function placeSchedinaBet(
 
 class BetService {
     private PDO $pdo;
+    private int $tenantId;
 
-    public function __construct(PDO $pdo) {
+    public function __construct(PDO $pdo, int $tenantId = 1) {
         $this->pdo = $pdo;
+        $this->tenantId = $tenantId;
         $this->ensurePuntataTable();
     }
 
@@ -196,8 +198,8 @@ class BetService {
         $this->pdo->beginTransaction();
 
         try {
-            $stmtSaldo = $this->pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ? FOR UPDATE');
-            $stmtSaldo->execute([$emailUtente]);
+            $stmtSaldo = $this->pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ? AND tenant_id = ? FOR UPDATE');
+            $stmtSaldo->execute([$emailUtente, $this->tenantId]);
             $conto = $stmtSaldo->fetch();
 
             if (!$conto) {
@@ -211,11 +213,11 @@ class BetService {
 
             $saldoNuovo = round($saldoAttuale - $importo, 2);
 
-            $stmtUpdateSaldo = $this->pdo->prepare('UPDATE CONTO SET saldo = ? WHERE email_intestatario = ?');
-            $stmtUpdateSaldo->execute([$saldoNuovo, $emailUtente]);
+            $stmtUpdateSaldo = $this->pdo->prepare('UPDATE CONTO SET saldo = ? WHERE email_intestatario = ? AND tenant_id = ?');
+            $stmtUpdateSaldo->execute([$saldoNuovo, $emailUtente, $this->tenantId]);
 
             $stmtInsertPuntata = $this->pdo->prepare(
-                'INSERT INTO PUNTATA (email_utente, partita, esito_scelto, quota, importo, vincita_potenziale, stato) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO PUNTATA (email_utente, partita, esito_scelto, quota, importo, vincita_potenziale, stato, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmtInsertPuntata->execute([
                 $emailUtente,
@@ -224,7 +226,8 @@ class BetService {
                 $quota,
                 $importo,
                 $vincitaPotenziale,
-                'APERTA'
+                'APERTA',
+                $this->tenantId
             ]);
 
             $idPuntata = (int) $this->pdo->lastInsertId();
@@ -235,6 +238,146 @@ class BetService {
                 'saldo_precedente' => $saldoAttuale,
                 'saldo_attuale' => $saldoNuovo,
                 'vincita_potenziale' => $vincitaPotenziale
+            ];
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public function placeSchedinaMultiplaBet(
+        string $emailUtente,
+        array $selezioni,
+        float $importo
+    ): array {
+        $emailUtente = trim($emailUtente);
+        $importo = round($importo, 2);
+
+        if ($emailUtente === '') {
+            throw new InvalidArgumentException('Utente non valido');
+        }
+
+        if ($importo <= 0) {
+            throw new InvalidArgumentException('Importo non valido');
+        }
+
+        if (empty($selezioni)) {
+            throw new InvalidArgumentException('Aggiungi almeno un evento alla schedina');
+        }
+
+        // Valida e normalizza le selezioni
+        $selezioniNormalizzate = [];
+        $quotaTotale = 1.0;
+
+        foreach ($selezioni as $selezione) {
+            $idPartita = (int) ($selezione['id_partita'] ?? 0);
+            $squadraCasa = trim((string) ($selezione['squadra_casa'] ?? ''));
+            $squadraTrasferta = trim((string) ($selezione['squadra_trasferta'] ?? ''));
+            $segno = (string) ($selezione['segno'] ?? '');
+            $quota = round((float) ($selezione['quota'] ?? 0), 2);
+
+            if ($idPartita <= 0) {
+                throw new InvalidArgumentException('ID partita non valido');
+            }
+
+            if ($squadraCasa === '' || $squadraTrasferta === '') {
+                throw new InvalidArgumentException('Nome squadra non valido');
+            }
+
+            if (!in_array($segno, ['1', 'X', '2'], true)) {
+                throw new InvalidArgumentException('Segno non valido');
+            }
+
+            if ($quota <= 0) {
+                throw new InvalidArgumentException('Quota non valida');
+            }
+
+            $selezioniNormalizzate[] = [
+                'id_partita' => $idPartita,
+                'squadra_casa' => $squadraCasa,
+                'squadra_trasferta' => $squadraTrasferta,
+                'segno' => $segno,
+                'quota' => $quota,
+            ];
+
+            $quotaTotale *= $quota;
+        }
+
+        $quotaTotale = round($quotaTotale, 2);
+        $vincitaPotenziale = round($importo * $quotaTotale, 2);
+
+        try {
+            $this->pdo->beginTransaction();
+
+            // Verifica saldo
+            $stmtSaldo = $this->pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ? AND tenant_id = ? FOR UPDATE');
+            $stmtSaldo->execute([$emailUtente, $this->tenantId]);
+            $conto = $stmtSaldo->fetch();
+
+            if (!$conto) {
+                throw new RuntimeException('Conto utente non trovato');
+            }
+
+            $saldoAttuale = (float) $conto['saldo'];
+            if ($saldoAttuale < $importo) {
+                throw new RuntimeException('Saldo insufficiente');
+            }
+
+            // Crea la schedina
+            $stmtSchedina = $this->pdo->prepare(
+                'INSERT INTO SCHEDINA (email_utente, importo_totale, quota_totale, vincita_potenziale, esito, stato, tenant_id) 
+                 VALUES (?, ?, ?, ?, NULL, ?, ?)'
+            );
+            $stmtSchedina->execute([$emailUtente, $importo, $quotaTotale, $vincitaPotenziale, 'APERTO', $this->tenantId]);
+            $schedinaId = (int) $this->pdo->lastInsertId();
+
+            // Inserisci le puntate
+            $stmtPuntata = $this->pdo->prepare(
+                'INSERT INTO PUNTATA (id_schedina, id_partita, email_utente, squadra_casa, squadra_trasferta, segno, quota, importo, vincita_potenziale, stato, tenant_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+
+            $puntataIds = [];
+            foreach ($selezioniNormalizzate as $selezione) {
+                $vincitaEvento = round($importo * $selezione['quota'], 2);
+                $stmtPuntata->execute([
+                    $schedinaId,
+                    $selezione['id_partita'],
+                    $emailUtente,
+                    $selezione['squadra_casa'],
+                    $selezione['squadra_trasferta'],
+                    $selezione['segno'],
+                    $selezione['quota'],
+                    $importo,
+                    $vincitaEvento,
+                    'APERTO',
+                    $this->tenantId,
+                ]);
+                $puntataIds[] = (int) $this->pdo->lastInsertId();
+            }
+
+            // Aggiorna il saldo
+            $stmtAggiornaSaldo = $this->pdo->prepare('UPDATE CONTO SET saldo = saldo - ? WHERE email_intestatario = ? AND tenant_id = ?');
+            $stmtAggiornaSaldo->execute([$importo, $emailUtente, $this->tenantId]);
+
+            // Leggi il nuovo saldo
+            $stmtNuovoSaldo = $this->pdo->prepare('SELECT saldo FROM CONTO WHERE email_intestatario = ? AND tenant_id = ?');
+            $stmtNuovoSaldo->execute([$emailUtente, $this->tenantId]);
+            $nuovoSaldo = (float) $stmtNuovoSaldo->fetchColumn();
+
+            $this->pdo->commit();
+
+            return [
+                'id_schedina' => $schedinaId,
+                'puntata_ids' => $puntataIds,
+                'numero_eventi' => count($selezioniNormalizzate),
+                'quota_totale' => $quotaTotale,
+                'vincita_potenziale' => $vincitaPotenziale,
+                'importo' => $importo,
+                'saldo_attuale' => round($nuovoSaldo, 2),
+                'created_at' => date('Y-m-d H:i:s'),
             ];
         } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {

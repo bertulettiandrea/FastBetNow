@@ -35,7 +35,8 @@ function normalizeUserDataFromDecoded(array $decoded) {
         'email' => $decoded['sub'] ?? '',
         'nome' => $decoded['nome'] ?? '',
         'ruolo' => $ruolo,
-        'permessi' => $permessi
+        'permessi' => $permessi,
+        'tenant_id' => $decoded['tenant_id'] ?? 1
     ];
 }
 
