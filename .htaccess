@@ -1,0 +1,10 @@
+# Configurazione error reporting e display
+php_flag display_errors On
+php_flag display_startup_errors On
+php_value error_reporting E_ALL
+
+# Timeout
+php_value max_execution_time 300
+
+# Memory limit
+php_value memory_limit 256M

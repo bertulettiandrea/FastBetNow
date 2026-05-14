@@ -9,6 +9,12 @@ include_once '../auth_helper.php';
 include_once '../database.php';
 require_once 'matches.php';
 
+// Check database connectivity
+if (!isDatabaseConnected()) {
+    http_response_code(503);
+    die("Servizio temporaneamente non disponibile. Prova più tardi.");
+}
+
 $userData = getUserDataFromSession();
 $isLoggedIn = ($userData !== null);
 $userEmail = $userData['email'] ?? '';

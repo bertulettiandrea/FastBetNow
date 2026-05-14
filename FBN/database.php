@@ -6,6 +6,9 @@ $user = getenv('DB_USER') ?: 'bertu';
 $pass = getenv('DB_PASS') ?: 'bertu';
 $charset = 'utf8mb4';
 
+$pdo = null;
+$db_error = null;
+
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 
 try {
@@ -25,12 +28,18 @@ try {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e2) {
-            http_response_code(500);
-            die("Errore di connessione al database: " . htmlspecialchars($e2->getMessage()));
+            $db_error = htmlspecialchars($e2->getMessage());
+            error_log("Database connection failed: " . $e2->getMessage());
         }
     } else {
-        http_response_code(500);
-        die("Errore di connessione al database: " . htmlspecialchars($e->getMessage()));
+        $db_error = htmlspecialchars($e->getMessage());
+        error_log("Database connection failed: " . $e->getMessage());
     }
+}
+
+// Funzione helper per controllare connessione DB
+function isDatabaseConnected() {
+    global $pdo;
+    return $pdo !== null;
 }
 ?>

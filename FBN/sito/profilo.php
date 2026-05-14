@@ -8,6 +8,11 @@ if (!isset($_SESSION['user_email'])) {
     exit;
 }
 
+if (!isDatabaseConnected()) {
+    http_response_code(503);
+    die("Servizio temporaneamente non disponibile");
+}
+
 $email = $_SESSION['user_email'];
 
 $stmt = $pdo->prepare("
