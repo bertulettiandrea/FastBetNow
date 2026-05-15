@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/Database.php';
+
 use PHPUnit\Framework\TestCase;
 
 class AdminServiceTest extends TestCase

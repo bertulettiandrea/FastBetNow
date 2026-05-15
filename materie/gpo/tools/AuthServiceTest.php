@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/Database.php';
+
 use PHPUnit\Framework\TestCase;
 
 class AuthServiceTest extends TestCase
@@ -24,7 +26,7 @@ class AuthServiceTest extends TestCase
 
     public function testVerifyPasswordCorretta()
     {
-        $hash = '$2y$10$fjGSHipCTjv6kO6BY70G4e7MmRNn3/invfDwrBgdK/OTReenZy1i2';
+        $hash = password_hash('password123', PASSWORD_BCRYPT);
 
         $this->assertTrue($this->authService->verifyPassword('password123', $hash));
     }
@@ -53,11 +55,12 @@ class AuthServiceTest extends TestCase
     public function testLoginCorretto()
     {
         $email = 'admin@gmail.com';
+        $hash = password_hash('password123', PASSWORD_BCRYPT);
 
         $this->database->method('fetchOne')
             ->willReturn([
                 'email' => $email,
-                'password' => '$2y$10$G/FL7voNhZxe2PMKGOTgGOZvqYv7iX114/n9R5XhNOCQDx9BCAq6C'
+                'password' => $hash
             ]);
 
         $token = $this->authService->login($email, 'password123');

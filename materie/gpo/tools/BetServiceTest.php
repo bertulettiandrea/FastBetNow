@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/Database.php';
+
 use PHPUnit\Framework\TestCase;
 
 class BetServiceTest extends TestCase
@@ -203,6 +205,12 @@ class BetServiceMock
 
     public function placeSchedinaMultiplaBet($email, $puntate)
     {
+        foreach ($puntate as $index => $puntata) {
+            if (!isset($puntate[$index]['email'])) {
+                $puntate[$index]['email'] = $email;
+            }
+        }
+
         if (!$this->validaPuntate($puntate)) {
             return null;
         }
